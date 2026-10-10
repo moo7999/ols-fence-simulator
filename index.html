@@ -45,9 +45,6 @@
     user-select:none; -webkit-user-select:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
   .orbit { position:absolute; bottom:12px; inset-inline-end:12px; display:flex; gap:6px; direction:ltr; }
-  .vtag { position:absolute; top:10px; inset-inline-start:12px; font-size:11px; font-weight:700;
-    color:var(--muted); background:var(--panel); border:1px solid var(--line); border-radius:6px;
-    padding:2px 7px; opacity:.85; direction:ltr; }
   .orbit button { width:38px; height:38px; border-radius:10px; border:1px solid var(--line);
     background:var(--panel); color:var(--teal); font-size:17px; font-weight:700; line-height:1; cursor:pointer;
     box-shadow:0 1px 4px rgba(0,0,0,.15); touch-action:manipulation; font-family:inherit; }
@@ -134,7 +131,6 @@
     </div>
     <div style="position:relative">
       <canvas id="cv" width="1180" height="560"></canvas>
-      <span class="vtag">v9</span>
       <div id="orbit" class="orbit">
         <button type="button" data-act="left" title="&#8634;">&#10554;</button>
         <button type="button" data-act="right" title="&#8635;">&#10555;</button>
@@ -372,7 +368,7 @@ function draw3d(p,e){
   function toCam(x,y,z){
     const X0 = x-(walk?cam.wx:cx), Y0 = y*YEX-(walk?eyeY:cy2), Z0 = z-(walk?cam.wz:cz);
     const x1=X0*cyw - Z0*syw, z1=X0*syw + Z0*cyw;
-    const y2=Y0*cp - z1*sp, z2=Y0*sp + z1*cp;
+    const y2=Y0*cp + z1*sp, z2=z1*cp - Y0*sp;
     return [x1, y2, z2 + (walk?0:cam.dist)];
   }
   function toScr(c){ const sc=cam.f/c[2]; return [W/2+c[0]*sc, Hc/2-c[1]*sc, c[2]]; }
