@@ -1,5 +1,9 @@
 # OLS Fence Simulator — محاكي أسطح تحديد العوائق
 
+**Live demo: <https://ols-fence-simulator.netlify.app>** · mirror: <https://moo7999.github.io/ols-fence-simulator/>
+
+**جربه مباشرة من المتصفح — بدون تحميل ولا تسجيل**
+
 An open-source, single-file, bilingual (Arabic/English) educational tool that lets any airport team instantly check whether a fence or object near a runway complies with the obstacle limitation surfaces (OLS) — the runway strip limit and the transitional surface — per the geometry of ICAO Annex 14 Vol I (Table 4-1).
 
 أداة تعليمية مفتوحة المصدر بملف واحد وواجهة ثنائية اللغة، تمكّن أي فريق مطار من الفحص الفوري لمطابقة سور أو جسم بجوار المدرج لأسطح تحديد العوائق — حد شريط المدرج والسطح الانتقالي — وفق هندسة الملحق 14 لمنظمة الطيران المدني الدولي
@@ -24,7 +28,7 @@ An open-source, single-file, bilingual (Arabic/English) educational tool that le
 
 ## Usage — الاستخدام
 
-Open `index.html` in any browser. Or host it anywhere (GitHub Pages works out of the box).
+Use it live at the link above, or open `index.html` in any browser — it works fully offline. Host it anywhere (GitHub Pages / Netlify work out of the box).
 
 افتح الملف بأي متصفح، أو استضفه على أي خدمة صفحات ثابتة
 
@@ -44,4 +48,4 @@ Educational advisory tool only. Not a substitute for a formal aeronautical study
 
 MIT — see `LICENSE`.
 
-Concept & development: Muath A. Al-Qaseer
+Concept & development: MUATH A. QUSAIER
