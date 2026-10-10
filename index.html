@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OLS Fence Simulator</title>
+<style>
+  :root { --teal:#1F9AA0; --dark:#16454E;
+    --bg:#f4f8f9; --panel:#ffffff; --text:#16454E; --muted:#5a6b70; --footer:#7a8a8f; --line:#d7e4e6;
+    --bad-bg:#fdecec; --bad-fg:#B2383B; --good-bg:#eaf7ef; --good-fg:#2E8B57; --tile:#EAF5F6; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0e1a1d; --panel:#152a2f; --text:#dceef0; --muted:#9db4b9; --footer:#82989d;
+      --line:#24424a; --tile:#1b3238; --bad-bg:#3a1d1f; --bad-fg:#ff9b9e; --good-bg:#16352a; --good-fg:#7fd6a6; }
+  }
+  :root[data-theme="dark"] { --bg:#0e1a1d; --panel:#152a2f; --text:#dceef0; --muted:#9db4b9; --footer:#82989d;
+      --line:#24424a; --tile:#1b3238; --bad-bg:#3a1d1f; --bad-fg:#ff9b9e; --good-bg:#16352a; --good-fg:#7fd6a6; }
+  * { box-sizing: border-box; }
+  body { font-family:"Segoe UI", Tahoma, "Sakkal Majalla", sans-serif; margin:0; background:var(--bg); color:var(--text); }
+  header { background:var(--dark); color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  header h1 { font-size:19px; margin:0; font-weight:700; }
+  header .sub { font-size:12.5px; opacity:.85; }
+  .langbtn { background:#fff; color:var(--dark); border:none; border-radius:8px; padding:7px 16px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .wrap { max-width:1250px; margin:14px auto; padding:0 16px; }
+  .panel { background:var(--panel); border-radius:14px; padding:16px 18px; box-shadow:0 2px 10px rgba(22,69,78,.08); margin-bottom:12px; }
+  .grid { display:flex; gap:18px; flex-wrap:wrap; }
+  .ctl { flex:1; min-width:215px; }
+  .ctl label { display:block; font-weight:700; margin-bottom:5px; font-size:14.5px; }
+  .ctl .val { color:var(--teal); font-weight:700; }
+  .ctl input[type=range] { width:100%; accent-color:var(--teal); }
+  .ctl input[type=number], .ctl select { width:100%; font-family:inherit; font-size:15px; padding:7px 10px;
+    border:1px solid var(--teal); border-radius:8px; color:var(--text); background:var(--panel); }
+  .hint { font-size:12px; color:var(--muted); margin-top:4px; }
+  .verdict { text-align:center; padding:12px; border-radius:12px; font-size:20px; font-weight:800; }
+  .bad { background:var(--bad-bg); color:var(--bad-fg); }
+  .good { background:var(--good-bg); color:var(--good-fg); }
+  .nums { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .num { flex:1; min-width:140px; background:var(--tile); border-radius:10px; padding:9px 10px; text-align:center; }
+  .num b { display:block; font-size:18px; }
+  .num small { color:var(--muted); font-size:12px; }
+  .views { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .tab { border:1.5px solid var(--teal); background:var(--panel); color:var(--teal); border-radius:8px; padding:6px 18px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .tab.on { background:var(--teal); color:#fff; }
+  .viewnote { font-size:12px; color:var(--muted); }
+  canvas { width:100%; height:auto; background:#fff; border-radius:10px; touch-action:none; display:block;
+    user-select:none; -webkit-user-select:none; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  .orbit { position:absolute; bottom:12px; inset-inline-end:12px; display:flex; gap:6px; direction:ltr; }
+  .vtag { position:absolute; top:10px; inset-inline-start:12px; font-size:11px; font-weight:700;
+    color:var(--muted); background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:2px 7px; opacity:.85; direction:ltr; }
+  .orbit button { width:38px; height:38px; border-radius:10px; border:1px solid var(--line);
+    background:var(--panel); color:var(--teal); font-size:17px; font-weight:700; line-height:1; cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.15); touch-action:manipulation; font-family:inherit; }
+  .orbit button:hover { background:var(--teal); color:#fff; }
+  :root[data-theme="dark"] canvas, body.darkcanvas canvas {}
+  footer { text-align:center; color:var(--footer); font-size:12.5px; padding:8px 14px 22px; line-height:1.7; }
+  .credit { margin-top:6px; opacity:.85; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="t_title"></h1>
+    <span class="sub" id="t_sub"></span>
+  </div>
+  <button class="langbtn" id="langbtn" onclick="toggleLang()">English</button>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="grid">
+      <div class="ctl">
+        <label id="l_cl"></label>
+        <input type="number" id="cl" step="0.01" value="100.00">
+        <div class="hint" id="h_cl"></div>
+      </div>
+      <div class="ctl">
+        <label id="l_g"></label>
+        <input type="number" id="g" step="0.01" value="101.20">
+        <div class="hint" id="h_g"></div>
+      </div>
+      <div class="ctl">
+        <label id="l_strip"></label>
+        <select id="strip">
+          <option value="140">140</option>
+          <option value="150" selected>150</option>
+          <option value="75">75</option>
+          <option value="70">70</option>
+          <option value="40">40</option>
+          <option value="30">30</option>
+          <option value="custom" id="opt_custom"></option>
+        </select>
+        <input type="number" id="stripCustom" step="1" value="150" style="display:none; margin-top:6px">
+        <div class="hint" id="h_strip"></div>
+      </div>
+      <div class="ctl">
+        <label id="l_slope"></label>
+        <select id="slope">
+          <option value="7" selected>14.3% (1:7)</option>
+          <option value="5">20% (1:5)</option>
+        </select>
+        <div class="hint" id="h_slope"></div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div class="ctl">
+        <label><span id="l_d"></span> <span class="val" id="dVal"></span></label>
+        <input type="range" id="dist" min="0" max="400" step="0.5" value="152">
+      </div>
+      <div class="ctl">
+        <label><span id="l_h"></span> <span class="val" id="hVal"></span></label>
+        <input type="range" id="hgt" min="0.5" max="12" step="0.1" value="2.5">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="verdict" id="verdict"></div>
+    <div class="nums">
+      <div class="num"><small id="n1"></small><b id="nCL"></b></div>
+      <div class="num"><small id="n2"></small><b id="nG"></b></div>
+      <div class="num"><small id="n3"></small><b id="nTop"></b></div>
+      <div class="num"><small id="n4"></small><b id="nAllow"></b></div>
+      <div class="num"><small id="n5"></small><b id="nPen"></b></div>
+      <div class="num"><small id="n6"></small><b id="nMin"></b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="views">
+      <button class="tab on" id="tab3d" onclick="setView('3d')"></button>
+      <button class="tab" id="tab2d" onclick="setView('2d')"></button>
+      <span class="viewnote" id="viewnote"></span>
+    </div>
+    <div style="position:relative">
+      <canvas id="cv" width="1180" height="560"></canvas>
+      <span class="vtag">v9</span>
+      <div id="orbit" class="orbit">
+        <button type="button" data-act="left" title="&#8634;">&#10554;</button>
+        <button type="button" data-act="right" title="&#8635;">&#10555;</button>
+        <button type="button" data-act="up">&#9650;</button>
+        <button type="button" data-act="down">&#9660;</button>
+        <button type="button" data-act="in">&#65291;</button>
+        <button type="button" data-act="out">&#65293;</button>
+        <button type="button" data-act="reset">&#8962;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span id="f_scope" style="font-weight:700"></span><br>
+  <span id="f_rule"></span><br>
+  <span id="f_disc"></span>
+  <div class="credit" id="f_credit"></div>
+</footer>
+
+<script>
+// ================= i18n =================
+const I = {
+ ar: {
+  dir:'rtl', btn:'English',
+  title:'محاكي أسطح تحديد العوائق — الأسوار والأجسام بجوار المدرج',
+  sub:'أداة تعليمية مفتوحة المصدر لأي مطار — حرك الجسم وشاهد متى يطابق',
+  l_cl:'منسوب خط منتصف المدرج المقابل (م)', h_cl:'منسوب المدرج عند أقرب نقطة مقابلة للجسم، فوق مستوى البحر',
+  l_g:'منسوب الأرض عند الجسم (م)', h_g:'منسوب سطح الأرض في موقع السور أو الجسم، فوق مستوى البحر',
+  l_strip:'نصف عرض شريط المدرج (م)', h_strip:'استخدم الشريط المعلن في نشرة معلومات الطيران لدولتك — القيم الشائعة حسب رمز المدرج ونوع الاقتراب',
+  opt_custom:'قيمة أخرى…',
+  l_slope:'ميل السطح الانتقالي', h_slope:'1:7 للمدرجات الآلية رمز 3 و4 — 1:5 لغير الآلية رمز 1 و2',
+  l_d:'المسافة عن خط المنتصف:', l_h:'ارتفاع الجسم حتى أعلى عنصر:',
+  m:' م',
+  v_inside:'✗ داخل شريط المدرج — الأجسام الثابتة غير القابلة للكسر محظورة',
+  v_pen:'✗ يخترق السطح الانتقالي بمقدار {x} م',
+  v_ok:'✓ مطابق — القمة تحت السطح الانتقالي بهامش {x} م',
+  n1:'منسوب خط المنتصف', n2:'منسوب الأرض', n3:'منسوب قمة الجسم',
+  n4:'المنسوب المسموح هنا', n5:'الاختراق / الهامش', n6:'الحد الأدنى للمسافة بهذا الارتفاع',
+  inside:'داخل الشريط', pen:'اختراق ', marg:'هامش ',
+  tab3d:'مشهد ثلاثي الأبعاد', tab2d:'مقطع عرضي',
+  note3d:'اسحب للتدوير — زر البيت ⌂ يتنقل: منظر الجو ← وسط المدرج ← بداية المدرج من الجهتين — المقياس الرأسي مبالغ فيه ×4 للتوضيح',
+  note2d:'مقطع عرضي عمودي على المدرج',
+  rwy:'المدرج', stripLbl:'حد الشريط', surf:'السطح الانتقالي', fence:'الجسم / السور', forb:'مجال محظور',
+  f_scope:'نطاق الأداة: الجزء الموازي للمدرج بين العتبتين فقط — لا تغطي أسطح الاقتراب والإقلاع عند نهايتي المدرج ولا بقية أسطح تحديد العوائق',
+  f_rule:'القاعدة: المسافة عن خط المنتصف ≥ نصف عرض الشريط + معامل الميل × (منسوب قمة الجسم − منسوب خط المنتصف) — وفق هندسة أسطح تحديد العوائق في الملحق 14 لمنظمة الطيران المدني الدولي، الجدول 4-1',
+  f_disc:'أداة تعليمية استرشادية فقط — لا تغني عن الدراسة الرسمية والرفع المساحي المعتمد وموافقة سلطة الطيران المدني المختصة، والعبرة دائماً بالشريط والأسطح المعلنة في نشرة معلومات الطيران لكل دولة',
+  f_credit:'فكرة وتطوير: معاذ عبدالله القصير — مفتوح المصدر برخصة MIT'
+ },
+ en: {
+  dir:'ltr', btn:'العربية',
+  title:'OLS Fence Simulator — Objects near the Runway',
+  sub:'Open-source educational tool for any airport — move the object and watch it comply',
+  l_cl:'Runway centreline elevation abeam (m)', h_cl:'Runway elevation at the point abeam the object, AMSL',
+  l_g:'Ground elevation at object (m)', h_g:'Ground surface elevation at the fence/object location, AMSL',
+  l_strip:'Runway strip half-width (m)', h_strip:'Use the strip declared in your State AIP — common values depend on runway code and approach type',
+  opt_custom:'Custom…',
+  l_slope:'Transitional surface slope', h_slope:'1:7 for instrument runways code 3–4 — 1:5 for non-instrument code 1–2',
+  l_d:'Distance from centreline:', l_h:'Object height to highest element:',
+  m:' m',
+  v_inside:'✗ Inside the runway strip — fixed non-frangible objects are prohibited',
+  v_pen:'✗ Penetrates the transitional surface by {x} m',
+  v_ok:'✓ Compliant — top is below the transitional surface with {x} m margin',
+  n1:'Centreline elevation', n2:'Ground elevation', n3:'Object top elevation',
+  n4:'Max allowed elevation here', n5:'Penetration / margin', n6:'Min distance at this height',
+  inside:'Inside strip', pen:'Penetrates ', marg:'Margin ',
+  tab3d:'3D view', tab2d:'Cross-section',
+  note3d:'Drag to look around — home ⌂ cycles: aerial → mid-runway → each runway end — vertical scale exaggerated ×4 for clarity',
+  note2d:'Vertical cross-section perpendicular to the runway',
+  rwy:'Runway', stripLbl:'Strip edge', surf:'Transitional surface', fence:'Object / fence', forb:'Obstacle-free airspace',
+  f_scope:'Scope: the portion parallel to the runway between thresholds only — approach and take-off climb surfaces at the runway ends, and the other OLS, are not covered',
+  f_rule:'Rule: distance from centreline ≥ strip half-width + slope factor × (object top elevation − centreline elevation) — per ICAO Annex 14 Vol I obstacle limitation surfaces geometry, Table 4-1',
+  f_disc:'Educational advisory tool only — not a substitute for a formal aeronautical study, certified survey, or approval by the competent civil aviation authority. The declared strip and surfaces published in each State AIP always govern.',
+  f_credit:'Concept & development: Muath A. Al-Qaseer — Open source under the MIT License'
+ }
+};
+let lang = 'ar';
+function T(){ return I[lang]; }
+function toggleLang(){ lang = (lang==='ar')?'en':'ar'; applyLang(); }
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = lang;
+  document.documentElement.dir = t.dir;
+  const set=(id,txt)=>{ document.getElementById(id).textContent = txt; };
+  set('langbtn', t.btn); set('t_title', t.title); set('t_sub', t.sub);
+  set('l_cl', t.l_cl); set('h_cl', t.h_cl); set('l_g', t.l_g); set('h_g', t.h_g);
+  set('l_strip', t.l_strip); set('h_strip', t.h_strip); set('opt_custom', t.opt_custom);
+  set('l_slope', t.l_slope); set('h_slope', t.h_slope);
+  set('l_d', t.l_d); set('l_h', t.l_h);
+  set('n1',t.n1); set('n2',t.n2); set('n3',t.n3); set('n4',t.n4); set('n5',t.n5); set('n6',t.n6);
+  set('tab3d', t.tab3d); set('tab2d', t.tab2d);
+  set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
+  update();
+}
+
+// ================= model =================
+function params(){
+  const cl = parseFloat(document.getElementById('cl').value) || 0;
+  const g  = parseFloat(document.getElementById('g').value) || 0;
+  const sSel = document.getElementById('strip').value;
+  const strip = sSel==='custom' ? (parseFloat(document.getElementById('stripCustom').value)||150)
+                                : parseFloat(sSel);
+  const slope = parseFloat(document.getElementById('slope').value);
+  const d = parseFloat(document.getElementById('dist').value);
+  const H = parseFloat(document.getElementById('hgt').value);
+  return {cl,g,strip,slope,d,H, top:g+H};
+}
+function evaluate(p){
+  const inside = p.d < p.strip;
+  const allow = inside ? NaN : p.cl + (p.d - p.strip)/p.slope;
+  const pen = inside ? Infinity : p.top - allow;
+  const dmin = p.strip + p.slope*Math.max(0, p.top - p.cl);
+  return {inside, allow, pen, dmin};
+}
+
+let view = '3d';
+function setView(v){
+  view = v;
+  document.getElementById('tab3d').classList.toggle('on', v==='3d');
+  document.getElementById('tab2d').classList.toggle('on', v==='2d');
+  const ob=document.getElementById('orbit'); if(ob) ob.style.display = (v==='3d') ? 'flex' : 'none';
+  update();
+}
+
+function fmt(v){ return v.toFixed(2) + T().m; }
+
+function update(){
+  const t = T(), p = params(), e = evaluate(p);
+  document.getElementById('dVal').textContent = p.d.toFixed(1)+t.m;
+  document.getElementById('hVal').textContent = p.H.toFixed(1)+t.m;
+  document.getElementById('nCL').textContent = fmt(p.cl);
+  document.getElementById('nG').textContent = fmt(p.g);
+  document.getElementById('nTop').textContent = fmt(p.top);
+  document.getElementById('nAllow').textContent = e.inside ? t.inside : fmt(e.allow);
+  document.getElementById('nPen').textContent = e.inside ? '—' : (e.pen>0 ? t.pen+fmt(e.pen) : t.marg+fmt(-e.pen));
+  document.getElementById('nMin').textContent = e.dmin.toFixed(1)+t.m;
+  const v = document.getElementById('verdict');
+  if (e.inside){ v.className='verdict bad'; v.textContent = t.v_inside; }
+  else if (e.pen > 0){ v.className='verdict bad'; v.textContent = t.v_pen.replace('{x}', e.pen.toFixed(2)); }
+  else { v.className='verdict good'; v.textContent = t.v_ok.replace('{x}', (-e.pen).toFixed(2)); }
+  document.getElementById('viewnote').textContent = (view==='3d') ? t.note3d : t.note2d;
+  if (view==='3d') draw3d(p,e); else draw2d(p,e);
+}
+
+// ================= colors =================
+const C = {
+  sand:'#E4D5B0', sandEdge:'#8a6f3f', rwy:'#4a4a4a', cline:'#ffffff',
+  strip:'rgba(31,154,160,.12)', stripEdge:'#1F9AA0',
+  surf:'rgba(90,110,115,.30)', surfEdge:'#16454E', forb:'rgba(154,167,170,.14)',
+  bad:'#B2383B', good:'#2E8B57', sky:'#eef6f8', label:'#16454E'
+};
+
+// ================= 2D =================
+function draw2d(p,e){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const W=cv.width, Hc=cv.height;
+  ctx.clearRect(0,0,W,Hc);
+  ctx.fillStyle=C.sky; ctx.fillRect(0,0,W,Hc);
+  const xmax = Math.max(p.strip+120, p.d+60, e.dmin+40, 260);
+  const relG = p.g - p.cl;
+  const ymin = Math.min(-2, relG-2), ymax = Math.max(10, relG+p.H+4, (xmax-p.strip)/p.slope+2);
+  const rtl = (T().dir==='rtl');
+  const x0=50, x1=W-30;
+  const X = m => rtl ? x1-(m/xmax)*(x1-x0) : x0+(m/xmax)*(x1-x0);
+  const yB=Hc-55, yT=25;
+  const Y = el => yB-((el-ymin)/(ymax-ymin))*(yB-yT);
+  // ground profile: 0 at runway, ramp 45..75 to relG, flat beyond
+  ctx.fillStyle=C.sand; ctx.beginPath();
+  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(75),Y(relG)); ctx.lineTo(X(xmax),Y(relG));
+  ctx.lineTo(X(xmax),yB); ctx.lineTo(X(0),yB); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=C.sandEdge; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(75),Y(relG)); ctx.lineTo(X(xmax),Y(relG)); ctx.stroke();
+  // runway
+  ctx.fillStyle=C.rwy; const xr0=X(0), xr1=X(23);
+  ctx.fillRect(Math.min(xr0,xr1), Y(0)-4, Math.abs(xr1-xr0), 6);
+  // strip zone + edge
+  ctx.fillStyle=C.strip;
+  const xs0=X(0), xs1=X(p.strip);
+  ctx.fillRect(Math.min(xs0,xs1), yT, Math.abs(xs1-xs0), yB-yT);
+  ctx.strokeStyle=C.stripEdge; ctx.setLineDash([7,5]); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(X(p.strip),yT); ctx.lineTo(X(p.strip),yB); ctx.stroke(); ctx.setLineDash([]);
+  // forbidden + transitional
+  ctx.fillStyle=C.forb; ctx.beginPath();
+  ctx.moveTo(X(p.strip),Y(0)); ctx.lineTo(X(xmax),Y((xmax-p.strip)/p.slope));
+  ctx.lineTo(X(xmax),yT); ctx.lineTo(X(p.strip),yT); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle=C.surfEdge; ctx.lineWidth=3; ctx.beginPath();
+  ctx.moveTo(X(p.strip),Y(0)); ctx.lineTo(X(xmax),Y((xmax-p.strip)/p.slope)); ctx.stroke();
+  // fence
+  const ok = !e.inside && e.pen<=0;
+  ctx.fillStyle = ok?C.good:C.bad;
+  const fx=X(p.d), half=5;
+  ctx.fillRect(fx-half, Y(relG+p.H), 2*half, Math.max(2, Y(relG)-Y(relG+p.H)));
+  // labels
+  const t=T();
+  ctx.fillStyle=C.label; ctx.font='bold 14px Tahoma'; ctx.textAlign='center';
+  ctx.fillText(t.rwy, X(11), Y(0)+22);
+  ctx.fillText(String(p.strip), X(p.strip), yB+20);
+  ctx.fillText('0', X(0), yB+20);
+  ctx.fillText(p.d.toFixed(0), fx, yB+36);
+  ctx.save(); ctx.fillStyle=C.surfEdge; ctx.font='bold 13px Tahoma';
+  ctx.fillText(t.surf, X(p.strip+(xmax-p.strip)*0.55), Y((xmax-p.strip)*0.55/p.slope)-12);
+  ctx.restore();
+  ctx.fillStyle= ok?C.good:C.bad; ctx.fillRect(fx-12, yB+24, 24, 3);
+}
+
+// ================= 3D =================
+const cam = { mode:'orbit', yaw:-0.78, pitch:0.52, dist:860, f:900,
+              wx:0, wz:0, wyaw:1.5708, wpitch:0.06 };
+const YEX = 4; // vertical exaggeration
+const NEAR = 8;
+const LIGHT = (()=>{ const l=[-0.45,0.85,0.30]; const n=Math.hypot(l[0],l[1],l[2]); return [l[0]/n,l[1]/n,l[2]/n]; })();
+const SKY_TOP=[176,212,226], SKY_HOR=[236,243,246];
+
+function draw3d(p,e){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const W=cv.width, Hc=cv.height;
+  const xmax = Math.max(p.strip+120, p.d+60, 260);
+  const relG = p.g - p.cl;
+  const Zl = 260;          // runway / fence / surface length
+  const Zt = 470;          // terrain length
+  const Xf = 300;          // terrain side extension
+  const cx = xmax*0.45, cy2=(relG+p.H)*YEX*0.4, cz=0;
+  const groundAt = x => (x<=45?0 : x>=75?relG : relG*(x-45)/30);
+  const eyeY = groundAt(cam.wx)*YEX + 1.7*YEX;
+
+  // sky
+  const sg = ctx.createLinearGradient(0,0,0,Hc);
+  sg.addColorStop(0, `rgb(${SKY_TOP.join(',')})`); sg.addColorStop(0.62, `rgb(${SKY_HOR.join(',')})`);
+  sg.addColorStop(1, 'rgb(224,216,194)');
+  ctx.fillStyle=sg; ctx.fillRect(0,0,W,Hc);
+
+  const walk = cam.mode==='walk';
+  const yawA = walk?cam.wyaw:cam.yaw, pitA = walk?cam.wpitch:cam.pitch;
+  const cyw=Math.cos(yawA), syw=Math.sin(yawA), cp=Math.cos(pitA), sp=Math.sin(pitA);
+  function toCam(x,y,z){
+    const X0 = x-(walk?cam.wx:cx), Y0 = y*YEX-(walk?eyeY:cy2), Z0 = z-(walk?cam.wz:cz);
+    const x1=X0*cyw - Z0*syw, z1=X0*syw + Z0*cyw;
+    const y2=Y0*cp - z1*sp, z2=Y0*sp + z1*cp;
+    return [x1, y2, z2 + (walk?0:cam.dist)];
+  }
+  function toScr(c){ const sc=cam.f/c[2]; return [W/2+c[0]*sc, Hc/2-c[1]*sc, c[2]]; }
+  function clipPoly(pts){
+    const out=[], n=pts.length;
+    for(let i=0;i<n;i++){
+      const A=pts[i], B=pts[(i+1)%n], ain=A[2]>NEAR, bin=B[2]>NEAR;
+      if(ain) out.push(A);
+      if(ain!==bin){ const t=(NEAR-A[2])/(B[2]-A[2]);
+        out.push([A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t, NEAR+0.01]); }
+    }
+    return out;
+  }
+  function fog(zc){ return Math.min(0.8, Math.max(0, (zc-470)/1350)); }
+  function shadeFog(base, n, zc){
+    const dt = Math.max(0, n[0]*LIGHT[0]+n[1]*LIGHT[1]+n[2]*LIGHT[2]);
+    const k = 0.58 + 0.42*dt;
+    let c = [base[0]*k, base[1]*k, base[2]*k];
+    const t = fog(zc);
+    return c.map((v,i)=>Math.round(v+(SKY_HOR[i]-v)*t));
+  }
+  function quad(a,b,c,d, base, alpha, edge, lw){
+    const poly = clipPoly([toCam(...a),toCam(...b),toCam(...c),toCam(...d)]);
+    if(poly.length<3) return;
+    const u=[b[0]-a[0],(b[1]-a[1])*YEX,b[2]-a[2]], v=[d[0]-a[0],(d[1]-a[1])*YEX,d[2]-a[2]];
+    let n=[u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+    const nl=Math.hypot(n[0],n[1],n[2])||1; n=n.map(x=>x/nl); if(n[1]<0) n=n.map(x=>-x);
+    let zc=0; const S=poly.map(c2=>{ zc+=c2[2]; return toScr(c2); }); zc/=poly.length;
+    ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
+    for(let i=1;i<S.length;i++) ctx.lineTo(S[i][0],S[i][1]);
+    ctx.closePath();
+    ctx.globalAlpha=(alpha==null?1:alpha);
+    ctx.fillStyle=`rgb(${shadeFog(base,n,zc).join(',')})`; ctx.fill(); ctx.globalAlpha=1;
+    if(edge){ ctx.strokeStyle=edge; ctx.lineWidth=lw||1.2; ctx.stroke(); }
+  }
+  function line(a,b, col, lw, dash){
+    let A=toCam(...a), B=toCam(...b);
+    if(A[2]<=NEAR && B[2]<=NEAR) return;
+    if(A[2]<=NEAR || B[2]<=NEAR){
+      const t=(NEAR+0.01-A[2])/(B[2]-A[2]);
+      const M=[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t, NEAR+0.01];
+      if(A[2]<=NEAR) A=M; else B=M;
+    }
+    const As=toScr(A), Bs=toScr(B);
+    if(dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(As[0],As[1]); ctx.lineTo(Bs[0],Bs[1]);
+    ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.stroke(); ctx.setLineDash([]);
+  }
+  function P3(x,y,z){ const c=toCam(x,y,z); if(c[2]<NEAR+5) return null; return toScr(c); }
+
+  // ---- 0a. horizon band: ground colour from the true horizon down ----
+  (function(){
+    const R=60000, ox=walk?cam.wx:cx, oz=walk?cam.wz:cz; let yh=null;
+    for(let a2=0;a2<6.3;a2+=0.25){
+      const c2=toCam(ox+R*Math.cos(a2), 0, oz+R*Math.sin(a2));
+      if(c2[2]>1000){ const y=toScr(c2)[1]; yh=(yh==null)?y:Math.min(yh,y); }
+    }
+    if(yh==null || yh>=Hc-1) return;
+    yh=Math.max(0,yh);
+    const near=[212,198,163];
+    const far = near.map((v,i)=>Math.round(v+(SKY_HOR[i]-v)*0.8));
+    const gg=ctx.createLinearGradient(0,yh,0,Hc);
+    gg.addColorStop(0,`rgb(${far.join(',')})`);
+    gg.addColorStop(0.3,`rgb(${near.join(',')})`);
+    gg.addColorStop(1,`rgb(${near.map(v=>Math.round(v*0.97)).join(',')})`);
+    ctx.fillStyle=gg; ctx.fillRect(0,yh-0.5,W,Hc-yh+0.5);
+  })();
+  // ---- 0b. silhouette skirt: fill below the terrain outline (aerial angles) ----
+  (function(){
+    const C=[toCam(-40-Xf,0,-Zt),toCam(-40-Xf,0,Zt),toCam(xmax+Xf,relG,Zt),toCam(xmax+Xf,relG,-Zt)];
+    if(C.some(c2=>c2[2]<NEAR+2)) return;
+    const S=C.map(toScr);
+    const yTop=Math.max(0,Math.min(...S.map(P=>P[1])));
+    const near=[212,198,163];
+    const far = near.map((v,i)=>Math.round(v+(SKY_HOR[i]-v)*0.8));
+    const gg=ctx.createLinearGradient(0,yTop,0,Hc);
+    gg.addColorStop(0,`rgb(${far.join(',')})`);
+    gg.addColorStop(0.3,`rgb(${near.join(',')})`);
+    gg.addColorStop(1,`rgb(${near.map(v=>Math.round(v*0.97)).join(',')})`);
+    ctx.fillStyle=gg;
+    for(let i=0;i<4;i++){
+      const A=S[i], B=S[(i+1)%4];
+      ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]);
+      ctx.lineTo(B[0],Hc+60); ctx.lineTo(A[0],Hc+60); ctx.closePath(); ctx.fill();
+    }
+  })();
+
+  // ---- 1. terrain strips ----
+  const STEP=47;
+  const cols=[[-40-Xf,-40,0,0],[-40,45,0,0],[45,75,0,relG],[75,xmax,relG,relG],[xmax,xmax+Xf,relG,relG]];
+  for(let z=-Zt; z<Zt; z+=STEP){
+    const even = (Math.round(z/STEP)%2===0);
+    const sand = even ? [227,212,175] : [221,205,166];
+    for(const [xa,xb,ya,yb] of cols)
+      quad([xa,ya,z],[xb,yb,z],[xb,yb,z+STEP],[xa,ya,z+STEP], sand);
+  }
+  // ---- 2. runway slab + markings ----
+  quad([-23,0.02,-Zl],[23,0.02,-Zl],[23,0.02,Zl],[-23,0.02,Zl], [62,64,66]);
+  line([-21.5,0.05,-Zl],[-21.5,0.05,Zl], 'rgba(245,245,245,.85)', 2);
+  line([ 21.5,0.05,-Zl],[ 21.5,0.05,Zl], 'rgba(245,245,245,.85)', 2);
+  for(let z=-Zl+52; z<Zl-52; z+=42) line([0,0.05,z],[0,0.05,z+21], 'rgba(250,250,250,.92)', 3);
+  for(const ze of [[-Zl+10,-Zl+42],[Zl-42,Zl-10]]){
+    for(let i=0;i<8;i++){ const x=-18.5+i*5.3;
+      quad([x,0.04,ze[0]],[x+2.6,0.04,ze[0]],[x+2.6,0.04,ze[1]],[x,0.04,ze[1]], [235,235,235]); }
+  }
+  // ---- 3. strip edge (dashed teal) ----
+  for(let z=-Zl; z<Zl; z+=26) line([p.strip,0.06,z],[p.strip,0.06,z+13], '#1F9AA0', 2.4);
+  // ---- 4. fence shadow then fence ----
+  const ok = !e.inside && e.pen<=0;
+  const z0=-Zl*0.92, z1=Zl*0.92;
+  const shW = Math.min(14, p.H*2.2);
+  quad([p.d,relG+0.01,z0],[p.d+shW,relG+0.01,z0],[p.d+shW,relG+0.01,z1],[p.d,relG+0.01,z1], [120,112,92], 0.30);
+  const meshCol = ok ? [46,139,87] : [178,56,59];
+  const lineCol = ok ? 'rgba(30,96,60,.95)' : 'rgba(125,38,41,.95)';
+  quad([p.d,relG,z0],[p.d,relG+p.H,z0],[p.d,relG+p.H,z1],[p.d,relG,z1], meshCol, 0.45);
+  for(let z=z0; z<z1; z+=10){
+    line([p.d,relG,z],[p.d,relG+p.H,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
+    line([p.d,relG+p.H,z],[p.d,relG,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
+  }
+  for(let z=z0; z<=z1; z+=48) line([p.d,relG,z],[p.d,relG+p.H,z], lineCol, 3);
+  line([p.d,relG,z0],[p.d,relG,z1], lineCol, 2);
+  line([p.d,relG+p.H,z0],[p.d,relG+p.H,z1], lineCol, 2.8);
+  line([p.d,relG+p.H*0.52,z0],[p.d,relG+p.H*0.52,z1], lineCol.replace('.95','.55'), 1.4);
+  line([p.d,relG+p.H+0.14,z0],[p.d,relG+p.H+0.14,z1], '#53585c', 1.6, [5,4]);
+
+  // ---- 5. transitional surface (translucent roof with grid) ----
+  const ymaxS=(xmax-p.strip)/p.slope;
+  const surfPoly = clipPoly([toCam(p.strip,0,-Zl),toCam(xmax,ymaxS,-Zl),toCam(xmax,ymaxS,Zl),toCam(p.strip,0,Zl)]);
+  if(surfPoly.length>=3){
+    const S=surfPoly.map(toScr);
+    const A1=P3(p.strip,0,0), A2=P3(xmax,ymaxS,0);
+    ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
+    for(let i=1;i<S.length;i++) ctx.lineTo(S[i][0],S[i][1]);
+    ctx.closePath();
+    if(A1 && A2){
+      const g2=ctx.createLinearGradient(A1[0],A1[1],A2[0],A2[1]);
+      g2.addColorStop(0,'rgba(96,120,126,0.10)'); g2.addColorStop(1,'rgba(96,120,126,0.32)');
+      ctx.fillStyle=g2;
+    } else ctx.fillStyle='rgba(96,120,126,0.22)';
+    ctx.fill(); ctx.strokeStyle='rgba(22,69,78,.85)'; ctx.lineWidth=2; ctx.stroke();
+    for(let x=p.strip+25; x<xmax; x+=25){ const h=(x-p.strip)/p.slope;
+      line([x,h,-Zl],[x,h,Zl], 'rgba(22,69,78,.20)', 1); }
+    for(let z=-Zl+65; z<Zl; z+=65)
+      line([p.strip,0,z],[xmax,ymaxS,z], 'rgba(22,69,78,.20)', 1);
+  }
+  // penetration slice above the surface
+  if(!e.inside && e.pen>0){
+    const surfAtD=(p.d-p.strip)/p.slope;
+    const pen = clipPoly([toCam(p.d,surfAtD,z0),toCam(p.d,relG+p.H,z0),toCam(p.d,relG+p.H,z1),toCam(p.d,surfAtD,z1)]);
+    if(pen.length>=3){
+      const S=pen.map(toScr);
+      ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
+      for(let i=1;i<S.length;i++) ctx.lineTo(S[i][0],S[i][1]);
+      ctx.closePath();
+      ctx.fillStyle='rgba(178,56,59,.55)'; ctx.fill(); ctx.strokeStyle='#7d1f22'; ctx.lineWidth=2.5; ctx.stroke();
+    }
+  }
+  // ---- 6. labels (with halo; skipped when behind the camera) ----
+  const t=T();
+  function label(txt, P, col, dy){
+    if(!P) return;
+    ctx.font='bold 14px Tahoma'; ctx.textAlign='center';
+    ctx.lineWidth=3.5; ctx.strokeStyle='rgba(255,255,255,.78)'; ctx.strokeText(txt, P[0], P[1]+(dy||-6));
+    ctx.fillStyle=col; ctx.fillText(txt, P[0], P[1]+(dy||-6));
+  }
+  label(t.rwy, P3(0,0.1,Zl*0.42), '#2d3133');
+  label(t.stripLbl+' '+p.strip, P3(p.strip,0.1,Zl*0.55), '#0e6a70', -8);
+  label(t.surf, P3(xmax*0.93,(xmax*0.93-p.strip)/p.slope,-Zl*0.25), '#16454E', -8);
+  label(t.fence+' — '+p.d.toFixed(0), P3(p.d, relG+p.H+0.8, -Zl*0.45), ok?'#1d6b43':'#8c2a2d');
+}
+
+// ================= interaction =================
+const cvEl = document.getElementById('cv');
+let dragging=false, px=0, py=0;
+function clampCam(){
+  if(cam.mode==='walk'){
+    cam.wpitch = Math.max(-0.6, Math.min(1.2, cam.wpitch));
+    cam.wx = Math.max(-200, Math.min(900, cam.wx));
+    cam.wz = Math.max(-440, Math.min(440, cam.wz));
+  } else {
+    cam.pitch = Math.max(0.05, Math.min(1.55, cam.pitch));
+    cam.dist  = Math.max(760, Math.min(1700, cam.dist));
+  }
+}
+function walkMove(d){
+  cam.wx += Math.sin(cam.wyaw)*d;
+  cam.wz += Math.cos(cam.wyaw)*d;
+}
+cvEl.addEventListener('pointerdown', ev=>{ if(view!=='3d')return; ev.preventDefault();
+  dragging=true; px=ev.clientX; py=ev.clientY;
+  try{ cvEl.setPointerCapture(ev.pointerId); }catch(e){} });
+cvEl.addEventListener('pointermove', ev=>{ if(!dragging||view!=='3d')return; ev.preventDefault();
+  const dx=(ev.clientX-px), dy=(ev.clientY-py);
+  if(cam.mode==='walk'){ cam.wyaw += dx*0.004; cam.wpitch += dy*0.004; }
+  else { cam.yaw += dx*0.006; cam.pitch += dy*0.006; }
+  clampCam(); px=ev.clientX; py=ev.clientY; update(); });
+['pointerup','pointercancel','lostpointercapture'].forEach(n=> cvEl.addEventListener(n, ()=>{ dragging=false; }));
+window.addEventListener('pointerup', ()=>{ dragging=false; });
+cvEl.addEventListener('wheel', ev=>{ if(view!=='3d')return; ev.preventDefault();
+  if(cam.mode==='walk') walkMove(-ev.deltaY*0.12);
+  else cam.dist += ev.deltaY*0.8;
+  clampCam(); update(); }, {passive:false});
+
+// on-screen controls: work everywhere, including viewers that swallow drag gestures
+const ORBIT_HOME = { yaw:-0.78, pitch:0.52, dist:860 };
+function orbitStep(act){
+  const w = cam.mode==='walk';
+  if(act==='left') { if(w) cam.wyaw -= 0.10; else cam.yaw -= 0.12; }
+  if(act==='right'){ if(w) cam.wyaw += 0.10; else cam.yaw += 0.12; }
+  if(act==='up')   { if(w) cam.wpitch -= 0.06; else cam.pitch += 0.07; }
+  if(act==='down') { if(w) cam.wpitch += 0.06; else cam.pitch -= 0.07; }
+  if(act==='in')   { if(w) walkMove(22); else cam.dist -= 70; }
+  if(act==='out')  { if(w) walkMove(-22); else cam.dist += 70; }
+  if(act==='reset'){
+    cam.home = ((cam.home||0)+1)%4;
+    if(cam.home===0){ cam.mode='orbit'; cam.yaw=ORBIT_HOME.yaw; cam.pitch=ORBIT_HOME.pitch; cam.dist=ORBIT_HOME.dist; }
+    if(cam.home===1){ cam.mode='walk'; cam.wx=0; cam.wz=0;    cam.wyaw=1.5708;  cam.wpitch=0.06; } // mid-runway, facing fence
+    if(cam.home===2){ cam.mode='walk'; cam.wx=0; cam.wz=-285; cam.wyaw=0;       cam.wpitch=0.05; } // S threshold, looking down the runway
+    if(cam.home===3){ cam.mode='walk'; cam.wx=0; cam.wz=285;  cam.wyaw=3.1416;  cam.wpitch=0.05; } // N threshold, looking back
+  }
+  clampCam(); update();
+}
+(function(){
+  let hold=null;
+  document.querySelectorAll('#orbit button').forEach(btn=>{
+    const act = btn.dataset.act;
+    btn.addEventListener('click', ()=>orbitStep(act));
+    btn.addEventListener('pointerdown', ev=>{ ev.preventDefault();
+      if(act==='reset') return;
+      hold = setInterval(()=>orbitStep(act), 90); });
+    ['pointerup','pointerleave','pointercancel'].forEach(n=>
+      btn.addEventListener(n, ()=>{ if(hold){ clearInterval(hold); hold=null; } }));
+  });
+})();
+
+['cl','g','slope','dist','hgt','stripCustom'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', update);
+});
+document.getElementById('strip').addEventListener('input', ()=>{
+  document.getElementById('stripCustom').style.display =
+    (document.getElementById('strip').value==='custom') ? 'block' : 'none';
+  update();
+});
+
+applyLang();
+</script>
+</body>
+</html>
