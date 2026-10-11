@@ -32,6 +32,16 @@ Use it live at the link above, or open `index.html` in any browser — it works 
 
 افتح الملف بأي متصفح، أو استضفه على أي خدمة صفحات ثابتة
 
+## Roadmap — خارطة الطريق
+
+Current version covers the two criteria that govern lateral objects near the runway: the runway strip limit and the transitional surface. Planned next, community contributions welcome:
+
+- Approach and take-off climb surfaces (runway ends)
+- Inner horizontal and conical surfaces
+- Shareable links that encode a full case in the URL
+
+النسخة الحالية تغطي المعيارين الحاكمين للأجسام الجانبية: حد شريط المدرج والسطح الانتقالي، والمخطط لاحقاً بمشاركة المجتمع: سطحا الاقتراب والإقلاع عند نهايتي المدرج، ثم السطحان الأفقي الداخلي والمخروطي، وروابط مشاركة تحفظ الحالة كاملة
+
 ## The rule — القاعدة
 
 distance from centreline ≥ strip half-width + slope factor × (object top elevation − centreline elevation)
