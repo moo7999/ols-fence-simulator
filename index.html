@@ -115,11 +115,29 @@
     <div class="grid" style="margin-top:12px">
       <div class="ctl">
         <label><span id="l_d"></span> <span class="val" id="dVal"></span></label>
-        <input type="range" id="dist" min="0" max="400" step="0.5" value="152">
+        <input type="range" id="dist" min="0" max="600" step="0.5" value="152">
+        <input type="number" id="distNum" step="1" min="0" max="8000" value="152" style="margin-top:6px">
+        <div class="hint" id="h_dnum"></div>
       </div>
       <div class="ctl">
         <label><span id="l_h"></span> <span class="val" id="hVal"></span></label>
         <input type="range" id="hgt" min="0.5" max="12" step="0.1" value="2.5">
+        <select id="otype" style="margin-top:6px">
+          <option value="fence" id="opt_f" selected></option>
+          <option value="crane" id="opt_cr"></option>
+        </select>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div class="ctl">
+        <label id="l_ihh"></label>
+        <input type="number" id="ihh" step="1" min="10" max="150" value="45">
+        <div class="hint" id="h_ihh"></div>
+      </div>
+      <div class="ctl">
+        <label id="l_ihe"></label>
+        <input type="number" id="ihe" step="50" min="1000" max="10000" value="4000">
+        <div class="hint" id="h_ihe"></div>
       </div>
     </div>
   </div>
@@ -179,8 +197,8 @@ const I = {
   l_d:'المسافة عن خط المنتصف:', l_h:'ارتفاع الجسم حتى أعلى عنصر:',
   m:' م',
   v_inside:'✗ داخل شريط المدرج — الأجسام الثابتة غير القابلة للكسر محظورة',
-  v_pen:'✗ يخترق السطح الانتقالي بمقدار {x} م',
-  v_ok:'✓ مطابق — القمة تحت السطح الانتقالي بهامش {x} م',
+  v_pen:'✗ يخترق {s} بمقدار {x} م',
+  v_ok:'✓ مطابق — القمة تحت {s} بهامش {x} م',
   n1:'منسوب خط المنتصف', n2:'منسوب الأرض', n3:'منسوب قمة الجسم',
   n4:'المنسوب المسموح هنا', n5:'الاختراق / الهامش', n6:'الحد الأدنى للمسافة بهذا الارتفاع',
   inside:'داخل الشريط', pen:'اختراق ', marg:'هامش ',
@@ -188,7 +206,14 @@ const I = {
   note3d:'اسحب للتدوير — زر البيت ⌂ يتنقل: منظر الجو ← وسط المدرج ← بداية المدرج من الجهتين — المقياس الرأسي مبالغ فيه ×4 للتوضيح',
   note2d:'مقطع عرضي عمودي على المدرج',
   rwy:'المدرج', stripLbl:'حد الشريط', surf:'السطح الانتقالي', fence:'الجسم / السور', forb:'مجال محظور',
-  f_scope:'نطاق الأداة: الجزء الموازي للمدرج بين العتبتين فقط — لا تغطي أسطح الاقتراب والإقلاع عند نهايتي المدرج ولا بقية أسطح تحديد العوائق',
+  l_ihh:'ارتفاع السطح الأفقي الداخلي (م)', h_ihh:'القيمة القياسية 45 م فوق المنسوب المرجعي — الملحق 14 يسنده لأخفض منسوب هبوط، وهذه الأداة تسنده لمنسوب خط المنتصف المدخل',
+  l_ihe:'نهاية الأفقي الداخلي عن المحور (م)', h_ihe:'المسافة من خط المنتصف التي يبدأ بعدها السطح المخروطي بميل 5% ويرتفع 100 م إضافية',
+  h_dnum:'أو اكتب المسافة مباشرة لأي قيمة حتى 8000 م',
+  sfT:'السطح الانتقالي', sfIH:'السطح الأفقي الداخلي', sfCon:'السطح المخروطي', gov:'السطح الحاكم',
+  opt_f:'سور شبكي', opt_cr:'رافعة برجية', craneLbl:'الرافعة',
+  never:'لا تكفي أي مسافة', v_never:'القمة أعلى من قمة السطح المخروطي — لا توجد مسافة جانبية كافية بهذا الارتفاع',
+  far3d:'خارج إطار العرض — القيم والمقطع العرضي دقيقان',
+  f_scope:'نطاق الأداة: المقطع الجانبي الموازي للمدرج بين العتبتين — يشمل حد الشريط والسطح الانتقالي والأفقي الداخلي والمخروطي، ولا يغطي أسطح الاقتراب والإقلاع عند نهايتي المدرج',
   f_rule:'القاعدة: المسافة عن خط المنتصف ≥ نصف عرض الشريط + معامل الميل × (منسوب قمة الجسم − منسوب خط المنتصف) — وفق هندسة أسطح تحديد العوائق في الملحق 14 لمنظمة الطيران المدني الدولي، الجدول 4-1',
   f_disc:'أداة تعليمية استرشادية فقط — لا تغني عن الدراسة الرسمية والرفع المساحي المعتمد وموافقة سلطة الطيران المدني المختصة، والعبرة دائماً بالشريط والأسطح المعلنة في نشرة معلومات الطيران لكل دولة',
   f_credit:'فكرة وتطوير: معاذ عبدالله القصير — مفتوح المصدر برخصة MIT'
@@ -205,8 +230,8 @@ const I = {
   l_d:'Distance from centreline:', l_h:'Object height to highest element:',
   m:' m',
   v_inside:'✗ Inside the runway strip — fixed non-frangible objects are prohibited',
-  v_pen:'✗ Penetrates the transitional surface by {x} m',
-  v_ok:'✓ Compliant — top is below the transitional surface with {x} m margin',
+  v_pen:'✗ Penetrates the {s} by {x} m',
+  v_ok:'✓ Compliant — top is below the {s} with {x} m margin',
   n1:'Centreline elevation', n2:'Ground elevation', n3:'Object top elevation',
   n4:'Max allowed elevation here', n5:'Penetration / margin', n6:'Min distance at this height',
   inside:'Inside strip', pen:'Penetrates ', marg:'Margin ',
@@ -214,7 +239,14 @@ const I = {
   note3d:'Drag to look around — home ⌂ cycles: aerial → mid-runway → each runway end — vertical scale exaggerated ×4 for clarity',
   note2d:'Vertical cross-section perpendicular to the runway',
   rwy:'Runway', stripLbl:'Strip edge', surf:'Transitional surface', fence:'Object / fence', forb:'Obstacle-free airspace',
-  f_scope:'Scope: the portion parallel to the runway between thresholds only — approach and take-off climb surfaces at the runway ends, and the other OLS, are not covered',
+  l_ihh:'Inner horizontal surface height (m)', h_ihh:'Standard value 45 m above the reference — Annex 14 references the lowest landing threshold; this tool references the entered centreline elevation',
+  l_ihe:'Inner horizontal outer edge from CL (m)', h_ihe:'Distance from centreline where the conical surface begins, rising at 5% for a further 100 m',
+  h_dnum:'Or type the distance directly, any value up to 8000 m',
+  sfT:'transitional surface', sfIH:'inner horizontal surface', sfCon:'conical surface', gov:'Governing surface',
+  opt_f:'Mesh fence', opt_cr:'Tower crane', craneLbl:'Crane',
+  never:'No distance clears', v_never:'Object top is above the conical surface top — no lateral distance clears this height',
+  far3d:'beyond 3D frame — values and cross-section remain exact',
+  f_scope:'Scope: the lateral profile parallel to the runway between thresholds — strip limit, transitional, inner horizontal and conical surfaces; approach and take-off climb surfaces at the runway ends are not covered',
   f_rule:'Rule: distance from centreline ≥ strip half-width + slope factor × (object top elevation − centreline elevation) — per ICAO Annex 14 Vol I obstacle limitation surfaces geometry, Table 4-1',
   f_disc:'Educational advisory tool only — not a substitute for a formal aeronautical study, certified survey, or approval by the competent civil aviation authority. The declared strip and surfaces published in each State AIP always govern.',
   f_credit:'Concept & development: MUATH A. QUSAIER — Open source under the MIT License'
@@ -233,6 +265,7 @@ function applyLang(){
   set('l_strip', t.l_strip); set('h_strip', t.h_strip); set('opt_custom', t.opt_custom);
   set('l_slope', t.l_slope); set('h_slope', t.h_slope);
   set('l_d', t.l_d); set('l_h', t.l_h);
+  set('opt_f', t.opt_f); set('opt_cr', t.opt_cr); set('l_ihh', t.l_ihh); set('h_ihh', t.h_ihh); set('l_ihe', t.l_ihe); set('h_ihe', t.h_ihe); set('h_dnum', t.h_dnum);
   set('n1',t.n1); set('n2',t.n2); set('n3',t.n3); set('n4',t.n4); set('n5',t.n5); set('n6',t.n6);
   set('tab3d', t.tab3d); set('tab2d', t.tab2d);
   set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
@@ -247,15 +280,43 @@ function params(){
   const strip = sSel==='custom' ? (parseFloat(document.getElementById('stripCustom').value)||150)
                                 : parseFloat(sSel);
   const slope = parseFloat(document.getElementById('slope').value);
-  const d = parseFloat(document.getElementById('dist').value);
+  const d = parseFloat(document.getElementById('distNum').value) || 0;
   const H = parseFloat(document.getElementById('hgt').value);
-  return {cl,g,strip,slope,d,H, top:g+H};
+  const ihH = parseFloat(document.getElementById('ihh').value) || 45;
+  const ihEnd = parseFloat(document.getElementById('ihe').value) || 4000;
+  const otype = document.getElementById('otype').value;
+  return {cl,g,strip,slope,d,H, top:g+H, ihH, ihEnd, conS:20, conRise:100, otype};
+}
+// lateral OLS profile: transitional (1:slope) capped by the inner horizontal (ihH),
+// then conical at 5% (1:20) from ihEnd rising conRise metres
+function surfParts(p){
+  return { tEnd: p.strip + p.slope*p.ihH, ihEnd: p.ihEnd, conTop: p.ihH + p.conRise,
+           conEnd: p.ihEnd + p.conS*p.conRise };
+}
+function allowRelAt(p, d){            // allowed height above CL reference at lateral distance d
+  if (d < p.strip) return NaN;
+  const sp = surfParts(p);
+  let h = Math.min((d - p.strip)/p.slope, p.ihH);
+  if (d > sp.ihEnd) h = Math.min(p.ihH + (d - sp.ihEnd)/p.conS, sp.conTop);
+  return h;
+}
+function surfNameAt(p, d, t){
+  const sp = surfParts(p);
+  if (d <= sp.tEnd) return t.sfT;
+  if (d <= sp.ihEnd) return t.sfIH;
+  return t.sfCon;
 }
 function evaluate(p){
   const inside = p.d < p.strip;
-  const allow = inside ? NaN : p.cl + (p.d - p.strip)/p.slope;
+  const allow = inside ? NaN : p.cl + allowRelAt(p, p.d);
   const pen = inside ? Infinity : p.top - allow;
-  const dmin = p.strip + p.slope*Math.max(0, p.top - p.cl);
+  const sp = surfParts(p);
+  const relTop = p.top - p.cl;
+  let dmin;
+  if (relTop <= 0) dmin = p.strip;
+  else if (relTop <= p.ihH) dmin = p.strip + p.slope*relTop;
+  else if (relTop <= sp.conTop) dmin = sp.ihEnd + p.conS*(relTop - p.ihH);
+  else dmin = Infinity;
   return {inside, allow, pen, dmin};
 }
 
@@ -279,12 +340,15 @@ function update(){
   document.getElementById('nTop').textContent = fmt(p.top);
   document.getElementById('nAllow').textContent = e.inside ? t.inside : fmt(e.allow);
   document.getElementById('nPen').textContent = e.inside ? '—' : (e.pen>0 ? t.pen+fmt(e.pen) : t.marg+fmt(-e.pen));
-  document.getElementById('nMin').textContent = e.dmin.toFixed(1)+t.m;
+  document.getElementById('nMin').textContent = isFinite(e.dmin) ? e.dmin.toFixed(1)+t.m : t.never;
   const v = document.getElementById('verdict');
+  const sName = e.inside ? '' : surfNameAt(p, p.d, t);
   if (e.inside){ v.className='verdict bad'; v.textContent = t.v_inside; }
-  else if (e.pen > 0){ v.className='verdict bad'; v.textContent = t.v_pen.replace('{x}', e.pen.toFixed(2)); }
-  else { v.className='verdict good'; v.textContent = t.v_ok.replace('{x}', (-e.pen).toFixed(2)); }
+  else if (!isFinite(e.dmin) && e.pen > 0){ v.className='verdict bad'; v.textContent = '✗ ' + t.v_never; }
+  else if (e.pen > 0){ v.className='verdict bad'; v.textContent = t.v_pen.replace('{s}', sName).replace('{x}', e.pen.toFixed(2)); }
+  else { v.className='verdict good'; v.textContent = t.v_ok.replace('{s}', sName).replace('{x}', (-e.pen).toFixed(2)); }
   document.getElementById('viewnote').textContent = (view==='3d') ? t.note3d : t.note2d;
+  lastP=p; lastE=e;
   if (view==='3d') draw3d(p,e); else draw2d(p,e);
 }
 
@@ -302,9 +366,11 @@ function draw2d(p,e){
   const W=cv.width, Hc=cv.height;
   ctx.clearRect(0,0,W,Hc);
   ctx.fillStyle=C.sky; ctx.fillRect(0,0,W,Hc);
-  const xmax = Math.max(p.strip+120, p.d+60, e.dmin+40, 260);
+  const sp = surfParts(p);
+  const dminX = isFinite(e.dmin) ? e.dmin+40 : 0;
+  const xmax = Math.max(p.strip+120, p.d+60, dminX, 260);
   const relG = p.g - p.cl;
-  const ymin = Math.min(-2, relG-2), ymax = Math.max(10, relG+p.H+4, (xmax-p.strip)/p.slope+2);
+  const ymin = Math.min(-2, relG-2), ymax = Math.max(10, relG+p.H+4, allowRelAt(p, xmax)+2);
   const rtl = (T().dir==='rtl');
   const x0=50, x1=W-30;
   const X = m => rtl ? x1-(m/xmax)*(x1-x0) : x0+(m/xmax)*(x1-x0);
@@ -325,17 +391,38 @@ function draw2d(p,e){
   ctx.fillRect(Math.min(xs0,xs1), yT, Math.abs(xs1-xs0), yB-yT);
   ctx.strokeStyle=C.stripEdge; ctx.setLineDash([7,5]); ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(X(p.strip),yT); ctx.lineTo(X(p.strip),yB); ctx.stroke(); ctx.setLineDash([]);
-  // forbidden + transitional
+  // forbidden airspace above the piecewise surface profile
+  const prof=[[p.strip,0]];
+  if (xmax > sp.tEnd) prof.push([sp.tEnd, p.ihH]);
+  if (xmax > sp.ihEnd) prof.push([sp.ihEnd, p.ihH]);
+  if (xmax > sp.conEnd) prof.push([sp.conEnd, sp.conTop]);
+  prof.push([xmax, allowRelAt(p, xmax)]);
   ctx.fillStyle=C.forb; ctx.beginPath();
-  ctx.moveTo(X(p.strip),Y(0)); ctx.lineTo(X(xmax),Y((xmax-p.strip)/p.slope));
+  ctx.moveTo(X(prof[0][0]),Y(prof[0][1]));
+  for(let i=1;i<prof.length;i++) ctx.lineTo(X(prof[i][0]),Y(prof[i][1]));
   ctx.lineTo(X(xmax),yT); ctx.lineTo(X(p.strip),yT); ctx.closePath(); ctx.fill();
   ctx.strokeStyle=C.surfEdge; ctx.lineWidth=3; ctx.beginPath();
-  ctx.moveTo(X(p.strip),Y(0)); ctx.lineTo(X(xmax),Y((xmax-p.strip)/p.slope)); ctx.stroke();
-  // fence
+  ctx.moveTo(X(prof[0][0]),Y(prof[0][1]));
+  for(let i=1;i<prof.length;i++) ctx.lineTo(X(prof[i][0]),Y(prof[i][1]));
+  ctx.stroke();
+  // object: fence bar or crane glyph
   const ok = !e.inside && e.pen<=0;
-  ctx.fillStyle = ok?C.good:C.bad;
-  const fx=X(p.d), half=5;
-  ctx.fillRect(fx-half, Y(relG+p.H), 2*half, Math.max(2, Y(relG)-Y(relG+p.H)));
+  const oc = ok?C.good:C.bad;
+  ctx.fillStyle = oc; ctx.strokeStyle = oc;
+  const fx=X(p.d);
+  if (p.otype==='crane'){
+    const yb2=Y(relG), yt2=Y(relG+p.H), ym=Y(relG+p.H*0.74);
+    ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(fx,yb2); ctx.lineTo(fx,ym); ctx.stroke();      // mast
+    const rtlDir = (T().dir==='rtl') ? 1 : -1;                                                   // jib toward runway
+    const jpx = 26, cpx = 10;
+    ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(fx - rtlDir*cpx, ym); ctx.lineTo(fx + rtlDir*jpx, ym); ctx.stroke();
+    ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(fx,yt2); ctx.lineTo(fx + rtlDir*jpx, ym); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fx,yt2); ctx.lineTo(fx - rtlDir*cpx, ym); ctx.stroke();
+    ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(fx,ym); ctx.lineTo(fx,yt2); ctx.stroke();      // apex
+  } else {
+    const half=5;
+    ctx.fillRect(fx-half, Y(relG+p.H), 2*half, Math.max(2, Y(relG)-Y(relG+p.H)));
+  }
   // labels
   const t=T();
   ctx.fillStyle=C.label; ctx.font='bold 14px Tahoma'; ctx.textAlign='center';
@@ -344,12 +431,15 @@ function draw2d(p,e){
   ctx.fillText('0', X(0), yB+20);
   ctx.fillText(p.d.toFixed(0), fx, yB+36);
   ctx.save(); ctx.fillStyle=C.surfEdge; ctx.font='bold 13px Tahoma';
-  ctx.fillText(t.surf, X(p.strip+(xmax-p.strip)*0.55), Y((xmax-p.strip)*0.55/p.slope)-12);
+  const lx = p.strip+(xmax-p.strip)*0.55;
+  ctx.fillText(surfNameAt(p, lx, t), X(lx), Y(allowRelAt(p, lx))-12);
   ctx.restore();
   ctx.fillStyle= ok?C.good:C.bad; ctx.fillRect(fx-12, yB+24, 24, 3);
 }
 
 // ================= 3D =================
+const ANIM0 = performance.now();
+let lastP=null, lastE=null;
 const cam = { mode:'orbit', yaw:-0.78, pitch:0.52, dist:860, f:900,
               wx:0, wz:0, wyaw:1.5708, wpitch:0.06 };
 const YEX = 4; // vertical exaggeration
@@ -360,7 +450,10 @@ const SKY_TOP=[176,212,226], SKY_HOR=[236,243,246];
 function draw3d(p,e){
   const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   const W=cv.width, Hc=cv.height;
-  const xmax = Math.max(p.strip+120, p.d+60, 260);
+  const ols = surfParts(p);
+  const dShow = Math.min(p.d, 560);                    // 3D frame clamp; values stay exact
+  const farClip = p.d > 560;
+  const xmax = Math.max(p.strip+120, dShow+60, 260);
   const relG = p.g - p.cl;
   const Zl = 260;          // runway / fence / surface length
   const Zt = 470;          // terrain length
@@ -493,26 +586,79 @@ function draw3d(p,e){
   const ok = !e.inside && e.pen<=0;
   const z0=-Zl*0.92, z1=Zl*0.92;
   const shW = Math.min(14, p.H*2.2);
-  quad([p.d,relG+0.01,z0],[p.d+shW,relG+0.01,z0],[p.d+shW,relG+0.01,z1],[p.d,relG+0.01,z1], [120,112,92], 0.30);
+  quad([dShow,relG+0.01,z0],[dShow+shW,relG+0.01,z0],[dShow+shW,relG+0.01,z1],[dShow,relG+0.01,z1], [120,112,92], 0.30);
   const meshCol = ok ? [46,139,87] : [178,56,59];
   const lineCol = ok ? 'rgba(30,96,60,.95)' : 'rgba(125,38,41,.95)';
-  quad([p.d,relG,z0],[p.d,relG+p.H,z0],[p.d,relG+p.H,z1],[p.d,relG,z1], meshCol, 0.45);
-  for(let z=z0; z<z1; z+=10){
-    line([p.d,relG,z],[p.d,relG+p.H,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
-    line([p.d,relG+p.H,z],[p.d,relG,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
+  if (p.otype === 'crane'){
+    // tower crane at dShow: lattice mast, jib toward the runway, apex = highest element at relG+H
+    const mT = relG + p.H*0.74, apex = relG + p.H, mw = 1.6;
+    const jl = Math.min(4 + p.H*1.1, 20), cjl = jl*0.38, jy = mT;
+    quad([dShow-mw,relG,0-mw],[dShow-mw,mT,0-mw],[dShow-mw,mT,0+mw],[dShow-mw,relG,0+mw], meshCol, 0.5);
+    quad([dShow+mw,relG,0-mw],[dShow+mw,mT,0-mw],[dShow+mw,mT,0+mw],[dShow+mw,relG,0+mw], meshCol, 0.5);
+    quad([dShow-mw,relG,0],[dShow-mw,mT,0],[dShow+mw,mT,0],[dShow+mw,relG,0], meshCol, 0.35);
+    const latN = Math.max(3, Math.round(p.H/1.2));
+    for(let i=0;i<latN;i++){ const ya=relG+(mT-relG)*i/latN, yb=relG+(mT-relG)*(i+1)/latN;
+      line([dShow-mw,ya,-mw],[dShow-mw,yb,mw], lineCol.replace('.95','.5'), 1);
+      line([dShow-mw,yb,-mw],[dShow-mw,ya,mw], lineCol.replace('.95','.5'), 1);
+    }
+    line([dShow-jl,jy,0],[dShow+cjl,jy,0], lineCol, 3.4);                        // jib + counter-jib
+    quad([dShow+cjl*0.55,jy+0.4,-1],[dShow+cjl,jy+0.4,-1],[dShow+cjl,jy-1.2,1],[dShow+cjl*0.55,jy-1.2,1], [90,95,100], 0.9); // counterweight
+    line([dShow,apex,0],[dShow-jl,jy,0], lineCol.replace('.95','.6'), 1.3);       // tie bars
+    line([dShow,apex,0],[dShow+cjl,jy,0], lineCol.replace('.95','.6'), 1.3);
+    line([dShow,relG+p.H*0.74,0],[dShow,apex,0], lineCol, 3);                     // apex tower
+    line([dShow-jl*0.7,jy,0],[dShow-jl*0.7,relG+Math.max(0.5,p.H*0.25),0], '#53585c', 1.2, [4,4]); // hook cable
+  } else {
+    quad([dShow,relG,z0],[dShow,relG+p.H,z0],[dShow,relG+p.H,z1],[dShow,relG,z1], meshCol, 0.45);
+    for(let z=z0; z<z1; z+=10){
+      line([dShow,relG,z],[dShow,relG+p.H,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
+      line([dShow,relG+p.H,z],[dShow,relG,Math.min(z1,z+8)], lineCol.replace('.95','.25'), 1);
+    }
+    for(let z=z0; z<=z1; z+=48) line([dShow,relG,z],[dShow,relG+p.H,z], lineCol, 3);
+    line([dShow,relG,z0],[dShow,relG,z1], lineCol, 2);
+    line([dShow,relG+p.H,z0],[dShow,relG+p.H,z1], lineCol, 2.8);
+    line([dShow,relG+p.H*0.52,z0],[dShow,relG+p.H*0.52,z1], lineCol.replace('.95','.55'), 1.4);
+    line([dShow,relG+p.H+0.14,z0],[dShow,relG+p.H+0.14,z1], '#53585c', 1.6, [5,4]);
   }
-  for(let z=z0; z<=z1; z+=48) line([p.d,relG,z],[p.d,relG+p.H,z], lineCol, 3);
-  line([p.d,relG,z0],[p.d,relG,z1], lineCol, 2);
-  line([p.d,relG+p.H,z0],[p.d,relG+p.H,z1], lineCol, 2.8);
-  line([p.d,relG+p.H*0.52,z0],[p.d,relG+p.H*0.52,z1], lineCol.replace('.95','.55'), 1.4);
-  line([p.d,relG+p.H+0.14,z0],[p.d,relG+p.H+0.14,z1], '#53585c', 1.6, [5,4]);
+  // aircraft on the runway — animated: green = takes off safely, red = held short, beacon flashing
+  {
+    const W2=22, FL=46, V=1/YEX, EG='rgba(105,112,121,.85)';
+    const tsec = (performance.now()-ANIM0)/1000;
+    let bz, h, pit=0, show=true, beacon=false;
+    if (ok){
+      const cyc = tsec % 11;
+      if (cyc < 4){ const u=cyc/4; bz = 235 - 290*u*u; h = 1.6; }
+      else if (cyc < 8){ const u=(cyc-4)/4; bz = -55 - 270*u; h = 1.6 + 40*u*u; pit = 0.06 + 0.05*Math.min(1, u*2); }
+      else show = false;
+    } else {
+      bz = 228 + 5*Math.sin(tsec*0.8); h = 1.6; beacon = (Math.floor(tsec*2.4)%2===0);
+    }
+    if (show){
+      const P=(dx,dy,vz)=>[dx, h+dy - vz*pit, bz+vz];
+      if (h < 4) quad(P(-W2,-h+0.07,-5),P(W2,-h+0.07,-5),P(W2,-h+0.07,5),P(-W2,-h+0.07,5),[88,88,88],0.25);
+      quad(P(0,0,2.8),P(-W2,0,7.5),P(-W2,0,2),P(0,0,-3),[221,225,231],1,EG,1.2);
+      quad(P(0,0,2.8),P(W2,0,7.5),P(W2,0,2),P(0,0,-3),[205,210,217],1,EG,1.2);
+      quad(P(-5,-1.2*V,5.2),P(-8.5,-1.2*V,5.2),P(-8.5,-1.2*V,1.2),P(-5,-1.2*V,1.2),[118,124,132],1,EG,1);
+      quad(P(5,-1.2*V,5.2),P(8.5,-1.2*V,5.2),P(8.5,-1.2*V,1.2),P(5,-1.2*V,1.2),[118,124,132],1,EG,1);
+      quad(P(0,-2.2*V,FL*0.44),P(0,2.5*V,FL*0.41),P(0,2.5*V,-FL*0.40),P(0,-2.2*V,-FL*0.45),[247,249,251],1,EG,1.2);
+      quad(P(-2.4,1.2*V,FL*0.44),P(2.4,1.2*V,FL*0.44),P(2.4,1.2*V,-FL*0.40),P(-2.4,1.2*V,-FL*0.40),[238,241,246],1,EG,1);
+      quad(P(-2.4,1.2*V,-FL*0.40),P(2.4,1.2*V,-FL*0.40),P(0,-0.5*V,-FL*0.56),P(0,-0.5*V,-FL*0.56),[233,237,242],1,EG,1);
+      quad(P(0,1.6*V,FL*0.44),P(0,9*V,FL*0.57),P(0,9*V,FL*0.50),P(0,1.6*V,FL*0.36),[27,112,118],1,'rgba(16,70,76,.9)',1.2);
+      quad(P(-9,1.8*V,FL*0.46),P(9,1.8*V,FL*0.46),P(6,1.8*V,FL*0.36),P(-6,1.8*V,FL*0.36),[221,225,231],1,EG,1);
+      if (beacon) quad(P(-0.8,9.3*V,FL*0.52),P(0.8,9.3*V,FL*0.52),P(0.8,9.3*V,FL*0.49),P(-0.8,9.3*V,FL*0.49),[228,52,56],0.95);
+    }
+  }
 
-  // ---- 5. transitional surface (translucent roof with grid) ----
-  const ymaxS=(xmax-p.strip)/p.slope;
-  const surfPoly = clipPoly([toCam(p.strip,0,-Zl),toCam(xmax,ymaxS,-Zl),toCam(xmax,ymaxS,Zl),toCam(p.strip,0,Zl)]);
-  if(surfPoly.length>=3){
-    const S=surfPoly.map(toScr);
-    const A1=P3(p.strip,0,0), A2=P3(xmax,ymaxS,0);
+  // ---- 5. OLS roof: transitional, capped by the inner horizontal plateau ----
+  const segs=[];
+  const xT = Math.min(xmax, ols.tEnd);
+  segs.push([p.strip, 0, xT, allowRelAt(p,xT)]);
+  if (xmax > ols.tEnd) segs.push([ols.tEnd, p.ihH, Math.min(xmax, ols.ihEnd), p.ihH]);
+  if (xmax > ols.ihEnd) segs.push([ols.ihEnd, p.ihH, xmax, allowRelAt(p,xmax)]);
+  for(const [xa,ha,xb,hb] of segs){
+    const poly = clipPoly([toCam(xa,ha,-Zl),toCam(xb,hb,-Zl),toCam(xb,hb,Zl),toCam(xa,ha,Zl)]);
+    if(poly.length<3) continue;
+    const S=poly.map(toScr);
+    const A1=P3(xa,ha,0), A2=P3(xb,hb,0);
     ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
     for(let i=1;i<S.length;i++) ctx.lineTo(S[i][0],S[i][1]);
     ctx.closePath();
@@ -522,15 +668,19 @@ function draw3d(p,e){
       ctx.fillStyle=g2;
     } else ctx.fillStyle='rgba(96,120,126,0.22)';
     ctx.fill(); ctx.strokeStyle='rgba(22,69,78,.85)'; ctx.lineWidth=2; ctx.stroke();
-    for(let x=p.strip+25; x<xmax; x+=25){ const h=(x-p.strip)/p.slope;
-      line([x,h,-Zl],[x,h,Zl], 'rgba(22,69,78,.20)', 1); }
-    for(let z=-Zl+65; z<Zl; z+=65)
-      line([p.strip,0,z],[xmax,ymaxS,z], 'rgba(22,69,78,.20)', 1);
+  }
+  for(let x=p.strip+25; x<xmax; x+=25) line([x,allowRelAt(p,x),-Zl],[x,allowRelAt(p,x),Zl], 'rgba(22,69,78,.20)', 1);
+  for(let z=-Zl+65; z<Zl; z+=65){
+    let prev=[p.strip,0];
+    for(const xq of [ols.tEnd, ols.ihEnd, xmax].filter(x=>x>p.strip && x<=xmax)){
+      line([prev[0],prev[1],z],[xq,allowRelAt(p,xq),z], 'rgba(22,69,78,.20)', 1);
+      prev=[xq,allowRelAt(p,xq)];
+    }
   }
   // penetration slice above the surface
-  if(!e.inside && e.pen>0){
-    const surfAtD=(p.d-p.strip)/p.slope;
-    const pen = clipPoly([toCam(p.d,surfAtD,z0),toCam(p.d,relG+p.H,z0),toCam(p.d,relG+p.H,z1),toCam(p.d,surfAtD,z1)]);
+  if(!e.inside && e.pen>0 && !farClip){
+    const surfAtD=allowRelAt(p, dShow);
+    const pen = clipPoly([toCam(dShow,surfAtD,z0),toCam(dShow,relG+p.H,z0),toCam(dShow,relG+p.H,z1),toCam(dShow,surfAtD,z1)]);
     if(pen.length>=3){
       const S=pen.map(toScr);
       ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
@@ -550,7 +700,7 @@ function draw3d(p,e){
   label(t.rwy, P3(0,0.1,Zl*0.42), '#2d3133');
   label(t.stripLbl+' '+p.strip, P3(p.strip,0.1,Zl*0.55), '#0e6a70', -8);
   label(t.surf, P3(xmax*0.93,(xmax*0.93-p.strip)/p.slope,-Zl*0.25), '#16454E', -8);
-  label(t.fence+' — '+p.d.toFixed(0), P3(p.d, relG+p.H+0.8, -Zl*0.45), ok?'#1d6b43':'#8c2a2d');
+  label((p.otype==='crane'?t.craneLbl:t.fence)+' — '+p.d.toFixed(0)+(farClip?' · '+t.far3d:''), P3(dShow, relG+p.H+0.8, -Zl*0.45), ok?'#1d6b43':'#8c2a2d');
 }
 
 // ================= interaction =================
@@ -617,8 +767,17 @@ function orbitStep(act){
   });
 })();
 
-['cl','g','slope','dist','hgt','stripCustom'].forEach(id=>{
+['cl','g','slope','hgt','stripCustom','ihh','ihe','otype'].forEach(id=>{
   document.getElementById(id).addEventListener('input', update);
+});
+document.getElementById('dist').addEventListener('input', ()=>{
+  document.getElementById('distNum').value = document.getElementById('dist').value;
+  update();
+});
+document.getElementById('distNum').addEventListener('input', ()=>{
+  const v = parseFloat(document.getElementById('distNum').value)||0;
+  document.getElementById('dist').value = Math.min(v, 600);
+  update();
 });
 document.getElementById('strip').addEventListener('input', ()=>{
   document.getElementById('stripCustom').style.display =
@@ -627,6 +786,10 @@ document.getElementById('strip').addEventListener('input', ()=>{
 });
 
 applyLang();
+(function animLoop(){
+  if (view==='3d' && lastP) draw3d(lastP, lastE);
+  requestAnimationFrame(animLoop);
+})();
 </script>
 </body>
 </html>

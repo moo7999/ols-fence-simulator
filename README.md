@@ -16,6 +16,8 @@ An open-source, single-file, bilingual (Arabic/English) educational tool that le
 - 2D cross-section view with the full calculation breakdown — مقطع عرضي مع تفاصيل الحساب
 - Free inputs for any airport: centreline elevation, ground elevation, strip half-width, transitional slope — مدخلات حرة لأي مطار
 - Instant verdict with penetration/margin and the minimum compliant distance — حكم فوري مع مقدار الاختراق أو الهامش والحد الأدنى للمسافة
+- Full lateral OLS profile: transitional, inner horizontal (45 m default) and conical (5%) surfaces — المقطع الجانبي كامل: السطح الانتقالي والأفقي الداخلي والمخروطي
+- Object types: mesh fence or tower crane, plus a parked aircraft on the runway for scale — نوع الجسم: سور شبكي أو رافعة برجية، مع طائرة على المدرج لإحساس الحجم
 - Works fully offline, no libraries, no network — one HTML file — يعمل بلا إنترنت وبلا مكتبات، ملف واحد
 - Light/dark aware, phone friendly — يدعم الوضع الليلي والجوال
 
@@ -37,10 +39,9 @@ Use it live at the link above, or open `index.html` in any browser — it works 
 Current version covers the two criteria that govern lateral objects near the runway: the runway strip limit and the transitional surface. Planned next, community contributions welcome:
 
 - Approach and take-off climb surfaces (runway ends)
-- Inner horizontal and conical surfaces
 - Shareable links that encode a full case in the URL
 
-النسخة الحالية تغطي المعيارين الحاكمين للأجسام الجانبية: حد شريط المدرج والسطح الانتقالي، والمخطط لاحقاً بمشاركة المجتمع: سطحا الاقتراب والإقلاع عند نهايتي المدرج، ثم السطحان الأفقي الداخلي والمخروطي، وروابط مشاركة تحفظ الحالة كاملة
+النسخة الحالية تغطي المعيارين الحاكمين للأجسام الجانبية: حد شريط المدرج والسطح الانتقالي، والمخطط لاحقاً بمشاركة المجتمع: سطحا الاقتراب والإقلاع عند نهايتي المدرج، وروابط مشاركة تحفظ الحالة كاملة
 
 ## The rule — القاعدة
 
