@@ -63,6 +63,21 @@
     box-shadow:0 1px 4px rgba(0,0,0,.15); touch-action:manipulation; font-family:inherit; }
   .orbit button:hover { background:var(--teal); color:#fff; }
   :root[data-theme="dark"] canvas, body.darkcanvas canvas {}
+  summary.bsum { cursor:pointer; font-weight:800; font-size:16.5px; color:var(--teal); }
+  textarea.bdata { width:100%; font-family:Consolas,monospace; font-size:13px; padding:8px 10px;
+    border:1px solid var(--teal); border-radius:8px; background:var(--panel); color:var(--text); direction:ltr; resize:vertical; }
+  .bbtns { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .btab { width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px; }
+  .btab th, .btab td { border:1px solid var(--line); padding:6px 9px; text-align:center; white-space:nowrap; }
+  .btab th { background:var(--tile); font-size:12.5px; }
+  .btab tbody tr { cursor:pointer; }
+  .btab tbody tr:hover { background:var(--tile); }
+  .cell-ok { color:var(--good-fg); font-weight:700; }
+  .cell-bad { color:var(--bad-fg); font-weight:700; }
+  .cell-warn { color:var(--warn-fg,#a97a17); font-weight:700; }
+  :root[data-theme="dark"] { --warn-fg:#e3b65a; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn-fg:#e3b65a; } }
+  .trio { display:flex; gap:6px; }
   footer { text-align:center; color:var(--footer); font-size:12.5px; padding:8px 14px 22px; line-height:1.7; }
   .credit { margin-top:6px; opacity:.85; }
 </style>
@@ -173,6 +188,52 @@
       </div>
     </div>
   </div>
+
+  <div class="panel">
+    <details id="batchBox">
+      <summary class="bsum" id="b_title"></summary>
+      <div class="hint" id="b_intro" style="margin:8px 0 12px"></div>
+      <div class="grid">
+        <div class="ctl">
+          <label id="b_l_thrA"></label>
+          <div class="trio">
+            <input type="number" id="aE" step="0.01" placeholder="E">
+            <input type="number" id="aN" step="0.01" placeholder="N">
+            <input type="number" id="aZ" step="0.01" placeholder="Z">
+          </div>
+          <div class="hint" id="b_h_thrA"></div>
+        </div>
+        <div class="ctl">
+          <label id="b_l_thrB"></label>
+          <div class="trio">
+            <input type="number" id="bE" step="0.01" placeholder="E">
+            <input type="number" id="bN" step="0.01" placeholder="N">
+            <input type="number" id="bZ" step="0.01" placeholder="Z">
+          </div>
+          <div class="hint" id="b_h_thrB"></div>
+        </div>
+        <div class="ctl">
+          <label id="b_l_hdef"></label>
+          <input type="number" id="bH" step="0.1" min="0" max="300" value="2.5">
+          <div class="hint" id="b_h_hdef"></div>
+        </div>
+      </div>
+      <div class="ctl" style="margin-top:12px; min-width:0">
+        <label id="b_l_data"></label>
+        <textarea id="bData" class="bdata" rows="7" placeholder="1, 500182.00, 100400.00, 251.10&#10;2, 500182.00, 100900.00, 252.90, 3.0"></textarea>
+        <div class="hint" id="b_h_data"></div>
+        <div class="bbtns">
+          <label class="tab" style="display:inline-flex;align-items:center"><input type="file" id="bFile" accept=".csv,.txt,.tsv" style="display:none"><span id="b_file"></span></label>
+          <button type="button" class="tab on" id="b_run" onclick="runBatch()"></button>
+          <button type="button" class="tab" id="b_sample" onclick="loadSample()"></button>
+          <button type="button" class="tab" id="b_csvbtn" onclick="exportBatch()" style="display:none"></button>
+        </div>
+      </div>
+      <div id="bSummary" class="verdict" style="display:none; margin-top:12px; font-size:16px"></div>
+      <div class="hint" id="b_click" style="display:none; margin-top:8px"></div>
+      <div id="bTableWrap" style="overflow-x:auto"></div>
+    </details>
+  </div>
 </div>
 
 <footer>
@@ -216,7 +277,21 @@ const I = {
   f_scope:'نطاق الأداة: المقطع الجانبي الموازي للمدرج بين العتبتين — يشمل حد الشريط والسطح الانتقالي والأفقي الداخلي والمخروطي، ولا يغطي أسطح الاقتراب والإقلاع عند نهايتي المدرج',
   f_rule:'القاعدة: المسافة عن خط المنتصف ≥ نصف عرض الشريط + معامل الميل × (منسوب قمة الجسم − منسوب خط المنتصف) — وفق هندسة أسطح تحديد العوائق في الملحق 14 لمنظمة الطيران المدني الدولي، الجدول 4-1',
   f_disc:'أداة تعليمية استرشادية فقط — لا تغني عن الدراسة الرسمية والرفع المساحي المعتمد وموافقة سلطة الطيران المدني المختصة، والعبرة دائماً بالشريط والأسطح المعلنة في نشرة معلومات الطيران لكل دولة',
-  f_credit:'فكرة وتطوير: معاذ عبدالله القصير — مفتوح المصدر برخصة MIT'
+  f_credit:'فكرة وتطوير: معاذ عبدالله القصير — مفتوح المصدر برخصة MIT',
+  b_title:'فحص جدول نقاط — ألصق من الإكسل أو أرفق ملفاً',
+  b_intro:'عرّف محور المدرج بنقطتي العتبتين بإحداثيات مسقطة بالمتر، ثم ألصق جدول النقاط أو أرفق ملفاً نصياً — تُفحص كل نقطة ضد الأسطح بنفس إعدادات الشريط والميل أعلاه، وتُحسب مسافتها العمودية عن المحور ومنسوب المحور عند محطتها تلقائياً',
+  b_l_thrA:'العتبة الأولى: شرقية، شمالية، منسوب (م)', b_l_thrB:'العتبة الثانية: شرقية، شمالية، منسوب (م)',
+  b_h_thrA:'نفس نظام إحداثيات النقاط — أي نظام مسقط بالمتر', b_h_thrB:'يُفترض منسوب المحور خطياً بين العتبتين',
+  b_l_hdef:'ارتفاع الجسم الافتراضي (م)', b_h_hdef:'يُستخدم لأي نقطة بلا عمود ارتفاع خامس',
+  b_l_data:'النقاط: رقم، شرقية، شمالية، منسوب الأرض، ارتفاع اختياري',
+  b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف داخل الأرقام',
+  b_file:'إرفاق ملف…', b_run:'افحص النقاط', b_sample:'مثال جاهز', b_csv:'تنزيل النتائج',
+  b_c1:'نقطة', b_c2:'المسافة عن المحور', b_c3:'المحطة', b_c4:'منسوب المحور', b_c5:'السطح الحاكم',
+  b_c6:'المنسوب المسموح', b_c7:'قمة الجسم', b_c8:'الهامش', b_c9:'الحكم',
+  b_ok:'✓ مطابق', b_pen:'✗ يخترق', b_in:'✗ داخل الشريط', b_out:'⚠ خارج العتبتين',
+  b_sum:'{n} نقطة: {ok} مطابقة · {pen} مخترقة · {ins} داخل الشريط · {out} خارج العتبتين',
+  b_err_cl:'أكمل إحداثيات العتبتين الست أولاً', b_err_pts:'ما أمكن قراءة أي نقطة — تأكد أن كل سطر يحوي شرقية وشمالية ومنسوباً',
+  b_click:'اضغط أي صف لعرض نقطته في المشهد والمقطع أعلاه — النقاط خارج العتبتين تقع تحت أسطح الاقتراب والإقلاع التي لا تغطيها الأداة'
  },
  en: {
   dir:'ltr', btn:'العربية',
@@ -249,7 +324,21 @@ const I = {
   f_scope:'Scope: the lateral profile parallel to the runway between thresholds — strip limit, transitional, inner horizontal and conical surfaces; approach and take-off climb surfaces at the runway ends are not covered',
   f_rule:'Rule: distance from centreline ≥ strip half-width + slope factor × (object top elevation − centreline elevation) — per ICAO Annex 14 Vol I obstacle limitation surfaces geometry, Table 4-1',
   f_disc:'Educational advisory tool only — not a substitute for a formal aeronautical study, certified survey, or approval by the competent civil aviation authority. The declared strip and surfaces published in each State AIP always govern.',
-  f_credit:'Concept & development: MUATH A. QUSAIER — Open source under the MIT License'
+  f_credit:'Concept & development: MUATH A. QUSAIER — Open source under the MIT License',
+  b_title:'Batch check — paste from Excel or attach a file',
+  b_intro:'Define the runway centreline by its two threshold points in projected metric coordinates, then paste your point table or attach a text file — every point is checked against the surfaces using the strip and slope settings above, with its perpendicular distance and the centreline elevation at its station computed automatically',
+  b_l_thrA:'Threshold A: easting, northing, elevation (m)', b_l_thrB:'Threshold B: easting, northing, elevation (m)',
+  b_h_thrA:'Same coordinate system as the points — any projected system in metres', b_h_thrB:'Centreline elevation is interpolated linearly between thresholds',
+  b_l_hdef:'Default object height (m)', b_h_hdef:'Used for any point without a fifth height column',
+  b_l_data:'Points: id, easting, northing, ground elevation, optional height',
+  b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators inside numbers',
+  b_file:'Attach file…', b_run:'Check points', b_sample:'Load sample', b_csv:'Download results',
+  b_c1:'Point', b_c2:'Distance from CL', b_c3:'Station', b_c4:'CL elevation', b_c5:'Governing surface',
+  b_c6:'Max allowed', b_c7:'Object top', b_c8:'Margin', b_c9:'Verdict',
+  b_ok:'✓ Compliant', b_pen:'✗ Penetrates', b_in:'✗ Inside strip', b_out:'⚠ Beyond thresholds',
+  b_sum:'{n} points: {ok} compliant · {pen} penetrating · {ins} inside strip · {out} beyond thresholds',
+  b_err_cl:'Fill in all six threshold coordinates first', b_err_pts:'No points could be read — make sure every line has an easting, a northing, and an elevation',
+  b_click:'Click any row to load its point into the scene and cross-section above — points beyond the thresholds fall under the approach and take-off surfaces, which this tool does not cover'
  }
 };
 let lang = 'ar';
@@ -269,6 +358,10 @@ function applyLang(){
   set('n1',t.n1); set('n2',t.n2); set('n3',t.n3); set('n4',t.n4); set('n5',t.n5); set('n6',t.n6);
   set('tab3d', t.tab3d); set('tab2d', t.tab2d);
   set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
+  ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
+   'b_file','b_run','b_sample','b_click'].forEach(k=> set(k, t[k]));
+  set('b_csvbtn', t.b_csv);
+  renderBatch();
   update();
 }
 
@@ -318,6 +411,115 @@ function evaluate(p){
   else if (relTop <= sp.conTop) dmin = sp.ihEnd + p.conS*(relTop - p.ihH);
   else dmin = Infinity;
   return {inside, allow, pen, dmin};
+}
+
+// ================= batch check =================
+let batchRows = null;
+function parsePoints(txt){
+  const pts = [];
+  for (const raw of txt.split(/\r?\n/)){
+    const line = raw.trim(); if (!line) continue;
+    const nums = line.split(/[\s;,،|]+/).map(parseFloat).filter(Number.isFinite);
+    if (nums.length < 3) continue;
+    let id = null, rest = nums;
+    if (nums.length >= 4 && Number.isInteger(nums[0]) && Math.abs(nums[0]) < 10000 && Math.abs(nums[1]) >= 1000){
+      id = nums[0]; rest = nums.slice(1);
+    }
+    if (rest.length < 3) continue;
+    const [E, N, Z] = rest;
+    const H = (rest.length === 4 && rest[3] > 0 && rest[3] <= 300) ? rest[3] : null;
+    pts.push({ id: id ?? (pts.length + 1), E, N, Z, H });
+  }
+  return pts;
+}
+function showBatchMsg(txt, bad){
+  const m = document.getElementById('bSummary');
+  m.style.display = 'block'; m.className = 'verdict ' + (bad ? 'bad' : 'good'); m.textContent = txt;
+  document.getElementById('bTableWrap').innerHTML = '';
+  document.getElementById('b_csvbtn').style.display = 'none';
+  document.getElementById('b_click').style.display = 'none';
+}
+function runBatch(){
+  const t = T();
+  const gv = id => parseFloat(document.getElementById(id).value);
+  const bp = { aE:gv('aE'), aN:gv('aN'), aZ:gv('aZ'), bE:gv('bE'), bN:gv('bN'), bZ:gv('bZ'), H0:gv('bH') };
+  if (![bp.aE,bp.aN,bp.aZ,bp.bE,bp.bN,bp.bZ].every(Number.isFinite)){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
+  const dx = bp.bE-bp.aE, dy = bp.bN-bp.aN, L = Math.hypot(dx,dy);
+  if (L < 1){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
+  const pts = parsePoints(document.getElementById('bData').value);
+  if (!pts.length){ batchRows=null; showBatchMsg(t.b_err_pts, true); return; }
+  const p0 = params(), ux = dx/L, uy = dy/L;
+  batchRows = pts.map(pt=>{
+    const H = pt.H ?? (Number.isFinite(bp.H0) ? bp.H0 : 0);
+    const s  = (pt.E-bp.aE)*ux + (pt.N-bp.aN)*uy;
+    const sc = Math.min(Math.max(s,0), L);
+    const d  = Math.hypot(pt.E-(bp.aE+s*ux), pt.N-(bp.aN+s*uy));
+    const clz = bp.aZ + (bp.bZ-bp.aZ)*sc/L;
+    const q = {...p0, cl:clz, g:pt.Z, d, H, top:pt.Z+H};
+    return { pt, H, s, sc, d, clz, q, e:evaluate(q), outside:(s<0 || s>L) };
+  });
+  renderBatch();
+}
+function renderBatch(){
+  if (!batchRows) return;
+  const t = T();
+  let nok=0, npen=0, nin=0, nout=0;
+  const body = batchRows.map((r,i)=>{
+    let vcls, vtxt;
+    if (r.e.inside){ vcls='cell-bad'; vtxt=t.b_in; nin++; }
+    else if (r.e.pen > 0){ vcls='cell-bad'; vtxt=t.b_pen+' '+r.e.pen.toFixed(2)+t.m; npen++; }
+    else { vcls='cell-ok'; vtxt=t.b_ok+' '+(-r.e.pen).toFixed(2)+t.m; nok++; }
+    if (r.outside){ nout++; if (vcls==='cell-ok') vcls='cell-warn'; vtxt=t.b_out+' · '+vtxt; }
+    const sName = r.e.inside ? '—' : surfNameAt(r.q, r.d, t);
+    const allow = r.e.inside ? '—' : r.e.allow.toFixed(2);
+    const marg  = r.e.inside ? '—' : (-r.e.pen).toFixed(2);
+    return '<tr onclick="loadRow('+i+')"><td>'+r.pt.id+'</td><td>'+r.d.toFixed(1)+'</td><td>'+r.sc.toFixed(0)+
+      '</td><td>'+r.clz.toFixed(2)+'</td><td>'+sName+'</td><td>'+allow+'</td><td>'+r.q.top.toFixed(2)+
+      '</td><td>'+marg+'</td><td class="'+vcls+'">'+vtxt+'</td></tr>';
+  }).join('');
+  const head = '<tr>'+[t.b_c1,t.b_c2,t.b_c3,t.b_c4,t.b_c5,t.b_c6,t.b_c7,t.b_c8,t.b_c9].map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+  document.getElementById('bTableWrap').innerHTML = '<table class="btab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
+  const m = document.getElementById('bSummary');
+  m.style.display='block'; m.className = 'verdict ' + ((npen+nin>0) ? 'bad' : 'good');
+  m.textContent = t.b_sum.replace('{n}',batchRows.length).replace('{ok}',nok).replace('{pen}',npen).replace('{ins}',nin).replace('{out}',nout);
+  document.getElementById('b_csvbtn').style.display='inline-block';
+  document.getElementById('b_click').style.display='block';
+}
+function loadRow(i){
+  const r = batchRows[i];
+  document.getElementById('cl').value = r.clz.toFixed(2);
+  document.getElementById('g').value  = r.pt.Z.toFixed(2);
+  document.getElementById('distNum').value = r.d.toFixed(1);
+  document.getElementById('dist').value = Math.min(r.d, 600);
+  document.getElementById('hgt').value = Math.min(Math.max(r.H, 0.5), 12);
+  update();
+  document.getElementById('cv').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function exportBatch(){
+  if (!batchRows) return;
+  const lines = ['id,dist_CL_m,station_m,CL_elev_m,surface_rank,allowed_elev_m,top_elev_m,margin_m,verdict'];
+  for (const r of batchRows){
+    let v = r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK');
+    if (r.outside) v = 'BEYOND_THR+'+v;
+    const sp2 = surfParts(r.q);
+    const sName = r.e.inside ? '' : (r.d<=sp2.tEnd ? 'transitional' : (r.d<=sp2.ihEnd ? 'inner_horizontal' : 'conical'));
+    lines.push([r.pt.id, r.d.toFixed(2), r.sc.toFixed(1), r.clz.toFixed(2), sName,
+      r.e.inside?'':r.e.allow.toFixed(2), r.q.top.toFixed(2), r.e.inside?'':(-r.e.pen).toFixed(2), v].join(','));
+  }
+  const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'ols-batch-results.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+function loadSample(){
+  const sv = (id,v)=>{ document.getElementById(id).value = v; };
+  sv('aE',500000); sv('aN',100000); sv('aZ',250.00);
+  sv('bE',500000); sv('bN',103000); sv('bZ',262.00);
+  sv('bH',2.5);
+  document.getElementById('bData').value =
+'1, 500182.00, 100400.00, 251.10\n2, 500182.00, 100900.00, 252.90\n3, 500182.00, 101400.00, 255.60\n4, 500165.00, 101900.00, 257.80\n5, 500155.00, 102400.00, 259.40, 3.0\n6, 500120.00, 102750.00, 261.20\n7, 500182.00,  99850.00, 250.40';
+  document.getElementById('batchBox').open = true;
+  runBatch();
 }
 
 let view = '3d';
@@ -783,6 +985,18 @@ document.getElementById('strip').addEventListener('input', ()=>{
   document.getElementById('stripCustom').style.display =
     (document.getElementById('strip').value==='custom') ? 'block' : 'none';
   update();
+});
+document.getElementById('bFile').addEventListener('change', ev=>{
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{ document.getElementById('bData').value = rd.result; runBatch(); };
+  rd.readAsText(f);
+  ev.target.value = '';
+});
+// surface settings changed → recompute any open batch results
+['strip','stripCustom','slope','ihh','ihe'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{ if (batchRows) runBatch(); });
 });
 
 applyLang();
