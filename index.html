@@ -223,7 +223,8 @@
         <textarea id="bData" class="bdata" rows="7" placeholder="1, 500182.00, 100400.00, 251.10&#10;2, 500182.00, 100900.00, 252.90, 3.0"></textarea>
         <div class="hint" id="b_h_data"></div>
         <div class="bbtns">
-          <label class="tab" style="display:inline-flex;align-items:center"><input type="file" id="bFile" accept=".csv,.txt,.tsv" style="display:none"><span id="b_file"></span></label>
+          <input type="file" id="bFile" accept=".csv,.txt,.tsv,text/plain,text/csv" style="display:none">
+          <button type="button" class="tab" id="b_file" onclick="document.getElementById('bFile').click()"></button>
           <button type="button" class="tab on" id="b_run" onclick="runBatch()"></button>
           <button type="button" class="tab" id="b_sample" onclick="loadSample()"></button>
           <button type="button" class="tab" id="b_csvbtn" onclick="exportBatch()" style="display:none"></button>
