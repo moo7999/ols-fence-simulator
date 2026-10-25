@@ -295,8 +295,9 @@ const I = {
   b_err_cl:'أكمل إحداثيات العتبتين الست أولاً', b_err_pts:'ما أمكن قراءة أي نقطة — تأكد أن كل سطر يحوي شرقية وشمالية ومنسوباً',
   b_err_xlsx:'تعذرت قراءة الملف في هذا المتصفح — احفظه بصيغة نصية مفصولة بفواصل أو انسخ الخلايا والصقها مباشرة',
   b_err_type:'المدعوم: إكسل ووورد والملفات النصية — البي دي إف والصور لا تُقرأ جداولها بموثوقية، انسخ الجدول من المستند والصقه في المربع',
-  b_click:'النقاط كلها مرسومة الآن في المشهد أعلاه كسور متصل ملون بحكم كل نقطة، وإن سلمت جميعها تقلع الطائرة وتعود فتهبط بسلام — اضغط أي صف لإبراز نقطته وعرض مقطعها، والنقاط خارج العتبتين تقع تحت أسطح الاقتراب والإقلاع التي لا تغطيها الأداة',
-  b_clear:'مسح النتائج'
+  b_click:'النقاط كلها مرسومة الآن في المشهد أعلاه كسور متصل ملون بحكم كل نقطة، والمسقط الأفقي في زاوية المشهد يعرض شكل السور الحقيقي بمقياس موحد — المشهد نفسه يضغط المحور الطولي ليظهر السور كاملاً. إن سلمت النقاط جميعها تقلع الطائرة وتعود فتهبط بسلام، واضغط أي صف لإبراز نقطته وعرض مقطعها، والنقاط خارج العتبتين تقع تحت أسطح الاقتراب والإقلاع التي لا تغطيها الأداة',
+  b_clear:'مسح النتائج',
+  b_plan:'المسقط الأفقي — المقياس الحقيقي'
  },
  en: {
   dir:'ltr', btn:'العربية',
@@ -345,8 +346,9 @@ const I = {
   b_err_cl:'Fill in all six threshold coordinates first', b_err_pts:'No points could be read — make sure every line has an easting, a northing, and an elevation',
   b_err_xlsx:'Could not read this file in this browser — save it as CSV or copy the cells and paste them directly',
   b_err_type:'Supported: Excel, Word and text files — PDF and image tables cannot be read reliably; copy the table from the document and paste it in the box',
-  b_click:'All points are now drawn in the scene above as a connected fence coloured by each verdict — when every point clears, the aircraft takes off, returns and lands safely. Click any row to highlight its point and load its cross-section; points beyond the thresholds fall under the approach and take-off surfaces, which this tool does not cover',
-  b_clear:'Clear results'
+  b_click:'All points are now drawn in the scene above as a connected fence coloured by each verdict, and the plan inset in the corner shows the fence’s true shape at uniform scale — the scene itself compresses the along-runway axis to fit the whole fence. When every point clears, the aircraft takes off, returns and lands safely. Click any row to highlight its point and load its cross-section; points beyond the thresholds fall under the approach and take-off surfaces, which this tool does not cover',
+  b_clear:'Clear results',
+  b_plan:'Plan view — true scale'
  }
 };
 let lang = 'ar';
@@ -464,8 +466,9 @@ function runBatch(){
     const sc = Math.min(Math.max(s,0), L);
     const d  = Math.hypot(pt.E-(bp.aE+s*ux), pt.N-(bp.aN+s*uy));
     const clz = bp.aZ + (bp.bZ-bp.aZ)*sc/L;
+    const cx = (pt.E-bp.aE)*uy - (pt.N-bp.aN)*ux;   // signed cross-track, for the true plan inset
     const q = {...p0, cl:clz, g:pt.Z, d, H, top:pt.Z+H};
-    return { pt, H, s, sc, d, clz, relg:pt.Z-clz, q, e:evaluate(q), outside:(s<0 || s>L) };
+    return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e:evaluate(q), outside:(s<0 || s>L) };
   });
   batchL = L; batchSel = -1;
   renderBatch(); update();
@@ -963,6 +966,58 @@ function draw3d(p,e){
     }
   } else {
   label((p.otype==='crane'?t.craneLbl:t.fence)+' — '+p.d.toFixed(0)+(farClip?' · '+t.far3d:''), P3(dShow, relG+p.H+0.8, -Zl*0.45), ok?'#1d6b43':'#8c2a2d');
+  }
+
+  // ---- 7. true-scale plan inset: the fence's real shape, as on the survey drawing ----
+  if (hasBatch){
+    const IW = Math.min(330, W*0.30), IH = Math.min(210, Hc*0.40), ix = 12, iy = 12;
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = 'rgba(22,69,78,.85)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(ix, iy, IW, IH, 10); else ctx.rect(ix, iy, IW, IH);
+    ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 1;
+    const prs = batchRows;
+    let aMin = Math.min(0, ...prs.map(r=>r.s)), aMax = Math.max(batchL, ...prs.map(r=>r.s));
+    let cMin = Math.min(0, ...prs.map(r=>r.cx)), cMax = Math.max(0, ...prs.map(r=>r.cx));
+    const mpad = 0.06*Math.max(aMax-aMin, cMax-cMin);
+    aMin-=mpad; aMax+=mpad; cMin-=mpad; cMax+=mpad;
+    const S = Math.min((IW-20)/(aMax-aMin), (IH-32)/(cMax-cMin));
+    const ox = ix+10 + ((IW-20) - S*(aMax-aMin))/2;
+    const oy = iy+24 + ((IH-32) - S*(cMax-cMin))/2;
+    const MX = (a,c)=>[ ox + (a-aMin)*S, oy + (c-cMin)*S ];
+    // runway slab on the centreline
+    const [r1x,r1y] = MX(0,0), [r2x,r2y] = MX(batchL,0);
+    ctx.strokeStyle = '#55585c'; ctx.lineWidth = Math.max(3, 46*S);
+    ctx.beginPath(); ctx.moveTo(r1x,r1y); ctx.lineTo(r2x,r2y); ctx.stroke();
+    // strip edges (dashed teal) at ±strip half-width
+    ctx.strokeStyle = 'rgba(31,154,160,.8)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    for (const sg of [p.strip, -p.strip]){
+      const [e1x,e1y]=MX(0,sg), [e2x,e2y]=MX(batchL,sg);
+      ctx.beginPath(); ctx.moveTo(e1x,e1y); ctx.lineTo(e2x,e2y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // fence polyline, coloured per segment verdict
+    for (let i=0;i<prs.length-1;i++){
+      const a=prs[i], b2=prs[i+1];
+      const bad = (a.e.inside||a.e.pen>0||b2.e.inside||b2.e.pen>0);
+      ctx.strokeStyle = bad ? '#B2383B' : '#2E8B57'; ctx.lineWidth = 2.2;
+      const [x1,y1]=MX(a.s,a.cx), [x2,y2]=MX(b2.s,b2.cx);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    }
+    // point dots
+    for (let i=0;i<prs.length;i++){
+      const r=prs[i], bad=(r.e.inside||r.e.pen>0);
+      const [px2,py2]=MX(r.s,r.cx);
+      ctx.beginPath(); ctx.arc(px2,py2, i===batchSel?4.5:2.8, 0, 6.3);
+      ctx.fillStyle = bad ? '#B2383B' : (r.outside ? '#a97a17' : '#2E8B57'); ctx.fill();
+      if (i===batchSel){ ctx.strokeStyle='#16454E'; ctx.lineWidth=1.5; ctx.stroke(); }
+    }
+    ctx.font = 'bold 12px Tahoma'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#16454E'; ctx.fillText(t.b_plan, ix+IW/2, iy+16);
+    ctx.restore();
   }
 }
 
