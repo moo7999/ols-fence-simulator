@@ -18,7 +18,7 @@ An open-source, single-file, bilingual (Arabic/English) educational tool that le
 - Instant verdict with penetration/margin and the minimum compliant distance — حكم فوري مع مقدار الاختراق أو الهامش والحد الأدنى للمسافة
 - Full lateral OLS profile: transitional, inner horizontal (45 m default) and conical (5%) surfaces — المقطع الجانبي كامل: السطح الانتقالي والأفقي الداخلي والمخروطي
 - Object types: mesh fence or tower crane, plus a parked aircraft on the runway for scale — نوع الجسم: سور شبكي أو رافعة برجية، مع طائرة على المدرج لإحساس الحجم
-- Batch check: define the centreline by its two thresholds, then paste a point table straight from Excel or attach a CSV — per-point verdicts with distance, station, governing surface and margin, click any row to view it in 3D, export results as CSV — فحص جماعي: عرّف المحور بالعتبتين وألصق جدول النقاط من الإكسل أو أرفق ملفاً، وحكم لكل نقطة مع تصدير النتائج
+- Batch check: define the centreline by its two thresholds, then paste a point table straight from Excel or attach a CSV, .xlsx or .docx file (read natively, no libraries) — per-point verdicts with distance, station, governing surface and margin, the whole fence drawn in the 3D scene coloured by verdict with the aircraft taking off and landing when every point clears, click any row to highlight it, export results as CSV — فحص جماعي: عرّف المحور بالعتبتين وألصق جدول النقاط من الإكسل أو أرفق ملفاً، وحكم لكل نقطة مع تصدير النتائج
 - Works fully offline, no libraries, no network — one HTML file — يعمل بلا إنترنت وبلا مكتبات، ملف واحد
 - Light/dark aware, phone friendly — يدعم الوضع الليلي والجوال
 
