@@ -29,6 +29,10 @@ An open-source, single-file, bilingual (Arabic/English) educational tool that le
 |---|---|---|
 | ![aerial](docs/aerial.png) | ![compliant](docs/compliant.png) | ![threshold](docs/threshold.png) |
 
+Batch check — the whole point table drawn in the scene, coloured by verdict:
+
+![batch](docs/batch.png)
+
 ## Usage — الاستخدام
 
 Use it live at the link above, or open `index.html` in any browser — it works fully offline. Host it anywhere (GitHub Pages / Netlify work out of the box).
