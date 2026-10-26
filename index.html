@@ -194,6 +194,18 @@
     <details id="batchBox">
       <summary class="bsum" id="b_title"></summary>
       <div class="hint" id="b_intro" style="margin:8px 0 12px"></div>
+      <div class="grid" style="margin-bottom:10px">
+        <div class="ctl" style="flex:1.4">
+          <label id="b_l_apt"></label>
+          <select id="aptSel" onchange="aptPick()"></select>
+          <div class="hint" id="b_h_apt"></div>
+        </div>
+        <div class="ctl">
+          <label id="b_l_rwy"></label>
+          <select id="rwySel" onchange="rwyPick()"></select>
+          <div class="hint" id="aptNote" style="color:var(--warn-fg,#a97a17); font-weight:700"></div>
+        </div>
+      </div>
       <div class="grid">
         <div class="ctl">
           <label id="b_l_thrA"></label>
@@ -298,6 +310,11 @@ const I = {
   b_err_type:'المدعوم: إكسل ووورد والملفات النصية — البي دي إف والصور لا تُقرأ جداولها بموثوقية، انسخ الجدول من المستند والصقه في المربع',
   b_click:'النقاط كلها مرسومة الآن في المشهد أعلاه كسور متصل ملون بحكم كل نقطة، والمسقط الأفقي في زاوية المشهد يعرض شكل السور الحقيقي بمقياس موحد — المشهد نفسه يضغط المحور الطولي ليظهر السور كاملاً. إن سلمت النقاط جميعها تقلع الطائرة وتعود فتهبط بسلام، واضغط أي صف لإبراز نقطته وعرض مقطعها، والنقاط خارج العتبتين تقع تحت أسطح الاقتراب والإقلاع التي لا تغطيها الأداة',
   b_clear:'مسح النتائج',
+  b_l_apt:'المطار — تعبئة العتبتين تلقائياً', b_l_rwy:'المدرج',
+  opt_manual:'إدخال يدوي…',
+  b_h_apt:'قاعدة مدمجة للمطارات السعودية من بيانات منشورة — تحقق دائماً من نشرة معلومات الطيران سارية المفعول قبل أي اعتماد',
+  apt_note:'عُبئت العتبتان بالنطاق المتري {z} شمال — تأكد أن إحداثيات نقاطك بنفس النطاق',
+  apt_noz:'منسوب هذه العتبة غير متوفر في البيانات — أدخله يدوياً من النشرة',
   b_plan:'المسقط الأفقي — المقياس الحقيقي'
  },
  en: {
@@ -349,6 +366,11 @@ const I = {
   b_err_type:'Supported: Excel, Word and text files — PDF and image tables cannot be read reliably; copy the table from the document and paste it in the box',
   b_click:'All points are now drawn in the scene above as a connected fence coloured by each verdict, and the plan inset in the corner shows the fence’s true shape at uniform scale — the scene itself compresses the along-runway axis to fit the whole fence. When every point clears, the aircraft takes off, returns and lands safely. Click any row to highlight its point and load its cross-section; points beyond the thresholds fall under the approach and take-off surfaces, which this tool does not cover',
   b_clear:'Clear results',
+  b_l_apt:'Airport — auto-fill the thresholds', b_l_rwy:'Runway',
+  opt_manual:'Manual entry…',
+  b_h_apt:'Built-in Saudi airports base from published data — always verify against the current AIP before relying on any result',
+  apt_note:'Thresholds filled in UTM zone {z} north — make sure your point coordinates use the same zone',
+  apt_noz:'This threshold’s elevation is missing from the data — enter it manually from the AIP',
   b_plan:'Plan view — true scale'
  }
 };
@@ -372,6 +394,8 @@ function applyLang(){
   ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
    'b_file','b_run','b_sample','b_click'].forEach(k=> set(k, t[k]));
   set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear);
+  set('b_l_apt', t.b_l_apt); set('b_l_rwy', t.b_l_rwy); set('b_h_apt', t.b_h_apt);
+  fillAptOptions();
   renderBatch();
   update();
 }
@@ -424,6 +448,55 @@ function evaluate(p){
   return {inside, allow, pen, dmin};
 }
 
+// ============ Saudi airports quick-fill (advisory data — the AIP always governs) ============
+const APTS = [{"c":"OEAB","ar":"أبها الدولي","en":"Abha International Airport","r":[{"id":"13/31","a":[18.2499008,42.6442986,2082.39],"b":[18.2308006,42.6689987,2090.32]}]},{"c":"OEAH","ar":"الأحساء الدولي","en":"Al-Ahsa International Airport","r":[{"id":"16/34","a":[25.2985992,49.4812012,179.22],"b":[25.2719994,49.4891014,175.26]}]},{"c":"OEBA","ar":"الباحة","en":"King Saud Bin Abdulaziz (Al Baha) Airport","r":[{"id":"07/25","a":[20.2912006,41.6190987,1670.91],"b":[20.3010998,41.6493988,1655.06]}]},{"c":"OEBH","ar":"بيشة","en":"Bisha Airport","r":[{"id":"18/36","a":[19.9979,42.6242981,1180.19],"b":[19.9703999,42.6213989,1184.45]}]},{"c":"OEDF","ar":"الملك فهد الدولي — الدمام","en":"King Fahd International Airport","r":[{"id":"16L/34R","a":[26.4885998,49.8036995,17.98],"b":[26.4538002,49.8143997,21.95]},{"id":"16R/34L","a":[26.4885998,49.7813988,14.63],"b":[26.4538002,49.792099,17.07]}]},{"c":"OEDM","ar":"الدوادمي","en":"Dawadmi Domestic Airport","r":[{"id":"15/33","a":[24.4622002,44.1144981,919.28],"b":[24.4375,44.1278,923.85]}]},{"c":"OEGN","ar":"جازان — الملك عبدالله","en":"Jizan Regional Airport / King Abdullah bin Abdulaziz Airport","r":[{"id":"15/33","a":[16.9130001,42.5786018,4.88],"b":[16.8890991,42.5928993,6.1]}]},{"c":"OEGS","ar":"القصيم الدولي","en":"Prince Naif bin Abdulaziz International Airport","r":[{"id":"15/33","a":[26.3148003,43.7669983,648.0],"b":[26.2908001,43.7807999,646.18]}]},{"c":"OEGT","ar":"قريات","en":"Gurayat Domestic Airport","r":[{"id":"10/28","a":[31.4158001,37.2640991,509.63],"b":[31.4081001,37.294899,500.18]}]},{"c":"OEHL","ar":"حائل الدولي","en":"Hail International Airport","r":[{"id":"18/36","a":[27.4546639,41.6873722,1001.88],"b":[27.4249194,41.685325,1015.29]}],"aip":1},{"c":"OEJB","ar":"الجبيل","en":"Jubail Airport","r":[{"id":"17/35","a":[27.0566006,49.4006004,5.79],"b":[27.0214996,49.4095993,7.62]}]},{"c":"OEJN","ar":"الملك عبدالعزيز الدولي — جدة","en":"King Abdulaziz International Airport","r":[{"id":"16C/34C","a":[21.69507,39.151543,7.92],"b":[21.661179,39.164917,7.92]},{"id":"16L/34R","a":[21.700436,39.167131,9.14],"b":[21.6665,39.1805,14.63]},{"id":"16R/34L","a":[21.7027,39.1269,3.96],"b":[21.6705,39.139599,3.96]}]},{"c":"OEMA","ar":"الأمير محمد بن عبدالعزيز — المدينة","en":"Prince Mohammad Bin Abdulaziz Airport","r":[{"id":"17/35","a":[24.5764065,39.7033157,655.62],"b":[24.5379925,39.7114716,634.9]},{"id":"18/36","a":[24.5634995,39.7039986,653.49],"b":[24.5359993,39.7019997,633.68]}]},{"c":"OENG","ar":"نجران","en":"Najran Domestic Airport","r":[{"id":"06/24","a":[17.6044998,44.4067001,1213.71],"b":[17.6182995,44.4315987,1206.4]}]},{"c":"OENN","ar":"خليج نيوم","en":"Neom Bay Airport","r":[{"id":"15/33","a":[27.935499,35.284599,7.62],"b":[27.919701,35.2929,9.75]}]},{"c":"OEPA","ar":"القيصومة — حفر الباطن","en":"Qaisumah–Hafar Al-Batin International Airport","r":[{"id":"16/34","a":[28.348867,46.121231,356.92],"b":[28.323328,46.132812,357.84]}]},{"c":"OERF","ar":"رفحاء","en":"Rafha Domestic Airport","r":[{"id":"11/29","a":[29.6317005,43.4765015,444.7],"b":[29.6210003,43.5049019,449.28]}]},{"c":"OERK","ar":"الملك خالد الدولي — الرياض","en":"King Khalid International Airport","r":[{"id":"15L/33R","a":[24.9769001,46.7019997,619.66],"b":[24.9440002,46.7228012,613.26]},{"id":"15R/33L","a":[24.9708996,46.6749001,624.54],"b":[24.9379997,46.6957016,619.66]}]},{"c":"OERR","ar":"عرعر","en":"Arar Domestic Airport","r":[{"id":"10/28","a":[30.9102001,41.1227989,552.6],"b":[30.9030991,41.1537018,549.86]}]},{"c":"OESH","ar":"شرورة","en":"Sharurah Domestic Airport","r":[{"id":"08/26","a":[17.4652996,47.1041985,712.01],"b":[17.468399,47.1385994,720.24]}]},{"c":"OESK","ar":"الجوف الدولي","en":"Al-Jawf International Airport","r":[{"id":"10/28","a":[29.7879009,40.0812988,689.15],"b":[29.7823009,40.1186981,688.85]}]},{"c":"OETB","ar":"الأمير سلطان بن عبدالعزيز — تبوك","en":"Prince Sultan bin Abdulaziz International Airport","r":[{"id":"06/24","a":[28.3691998,36.6198997,775.72],"b":[28.382,36.6509018,777.54]},{"id":"13/31","a":[28.3812008,36.5940018,771.14],"b":[28.3621998,36.6170998,773.89]}]},{"c":"OETF","ar":"الطائف الدولي","en":"Taif International Airport","r":[{"id":"07/25","a":[21.4773006,40.5205994,1477.67],"b":[21.4862995,40.5555,1443.84]},{"id":"17/35","a":[21.5063992,40.5409012,1448.71],"b":[21.4764004,40.5453987,1455.42]}]},{"c":"OETR","ar":"طريف","en":"Turaif Domestic Airport","r":[{"id":"10/28","a":[31.6963291,38.7159996,851.61],"b":[31.6891708,38.7464981,851.0]}]},{"c":"OEWD","ar":"وادي الدواسر","en":"Wadi Al Dawasir Domestic Airport","r":[{"id":"10/28","a":[20.5070992,45.1852989,628.5],"b":[20.5014,45.2137985,625.45]}]},{"c":"OEWJ","ar":"الوجه","en":"Al Wajh Domestic Airport","r":[{"id":"15/33","a":[26.2105007,36.4686012,19.81],"b":[26.1865997,36.4836006,20.12]}]},{"c":"OEYN","ar":"الأمير عبدالمحسن بن عبدالعزيز — ينبع","en":"Prince Abdulmohsen Bin Abdulaziz International Airport","r":[{"id":"10/28","a":[24.1474991,38.0480003,5.49],"b":[24.1408997,38.0788002,7.92]}]}];
+function ll2utm(lat, lon){
+  const a=6378137, f=1/298.257223563, k0=0.9996;
+  const e2=f*(2-f), ep2=e2/(1-e2);
+  const zone=Math.floor((lon+180)/6)+1, lam0=((zone-1)*6-180+3)*Math.PI/180;
+  const ph=lat*Math.PI/180, lm=lon*Math.PI/180;
+  const sn=Math.sin(ph), cs=Math.cos(ph), tn=Math.tan(ph);
+  const N=a/Math.sqrt(1-e2*sn*sn), T=tn*tn, C=ep2*cs*cs, A=cs*(lm-lam0);
+  const e4=e2*e2, e6=e4*e2;
+  const M=a*((1-e2/4-3*e4/64-5*e6/256)*ph-(3*e2/8+3*e4/32+45*e6/1024)*Math.sin(2*ph)+(15*e4/256+45*e6/1024)*Math.sin(4*ph)-(35*e6/3072)*Math.sin(6*ph));
+  const E=k0*N*(A+(1-T+C)*A*A*A/6+(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120)+500000;
+  const Nn=k0*(M+N*tn*(A*A/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24+(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
+  return {E, N:Nn, zone};
+}
+function fillAptOptions(){
+  const sel=document.getElementById('aptSel'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='';
+  const o0=document.createElement('option'); o0.value=''; o0.textContent=T().opt_manual; sel.appendChild(o0);
+  for(const a of APTS){
+    const o=document.createElement('option'); o.value=a.c;
+    o.textContent=a.c+' — '+(lang==='ar'?a.ar:a.en);
+    sel.appendChild(o);
+  }
+  sel.value=cur||''; aptFillRwys();
+}
+function aptCur(){ const c=document.getElementById('aptSel').value; return APTS.find(a=>a.c===c)||null; }
+function aptFillRwys(){
+  const a=aptCur(), rs=document.getElementById('rwySel');
+  rs.innerHTML='';
+  if(!a){ rs.disabled=true; return; }
+  rs.disabled=false;
+  a.r.forEach((rw,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=rw.id; rs.appendChild(o); });
+}
+function aptPick(){ aptFillRwys(); rwyPick(); }
+function rwyPick(){
+  const a=aptCur(), note=document.getElementById('aptNote');
+  if(!a){ note.textContent=''; return; }
+  const rw=a.r[parseInt(document.getElementById('rwySel').value,10)||0];
+  const pa=ll2utm(rw.a[0],rw.a[1]), pb=ll2utm(rw.b[0],rw.b[1]);
+  const sv=(id,v)=>{ document.getElementById(id).value=v; };
+  sv('aE',pa.E.toFixed(2)); sv('aN',pa.N.toFixed(2)); sv('aZ', rw.a[2]!=null?rw.a[2].toFixed(2):'');
+  sv('bE',pb.E.toFixed(2)); sv('bN',pb.N.toFixed(2)); sv('bZ', rw.b[2]!=null?rw.b[2].toFixed(2):'');
+  let msg=T().apt_note.replace('{z}', pa.zone);
+  if(rw.a[2]==null || rw.b[2]==null) msg+=' — '+T().apt_noz;
+  note.textContent=msg;
+  if(batchRows) runBatch();
+}
 // ================= batch check =================
 let batchRows = null, batchL = 0, batchSel = -1;
 function parsePoints(txt){
