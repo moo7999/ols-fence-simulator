@@ -46,6 +46,7 @@
   .verdict { text-align:center; padding:12px; border-radius:12px; font-size:20px; font-weight:800; }
   .bad { background:var(--bad-bg); color:var(--bad-fg); }
   .good { background:var(--good-bg); color:var(--good-fg); }
+  .warn { background:rgba(169,122,23,.14); color:var(--warn-fg,#a97a17); }
   .nums { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
   .num { flex:1; min-width:140px; background:var(--tile); border-radius:10px; padding:9px 10px; text-align:center; }
   .num b { display:block; font-size:18px; }
@@ -286,15 +287,18 @@ const I = {
   l_ihe:'نهاية الأفقي الداخلي عن المحور (م)', h_ihe:'المسافة من خط المنتصف التي يبدأ بعدها السطح المخروطي بميل 5% ويرتفع 100 م إضافية',
   h_dnum:'أو اكتب المسافة مباشرة لأي قيمة حتى 8000 م',
   sfT:'السطح الانتقالي', sfIH:'السطح الأفقي الداخلي', sfCon:'السطح المخروطي', gov:'السطح الحاكم',
+  sfApp:'سطح الاقتراب', sfToc:'سطح تسلق الإقلاع', b_endSurf:'سطحا الاقتراب والإقلاع',
+  b_nocov:'⚠ خارج نطاق التغطية',
+  note_bey:'النقطة خلف العتبة — حكمها من {s}، والمقطع العرضي الجانبي لا ينطبق عليها',
   opt_f:'سور شبكي', opt_cr:'رافعة برجية', craneLbl:'الرافعة',
   never:'لا تكفي أي مسافة', v_never:'القمة أعلى من قمة السطح المخروطي — لا توجد مسافة جانبية كافية بهذا الارتفاع',
   far3d:'خارج إطار العرض — القيم والمقطع العرضي دقيقان',
-  f_scope:'نطاق الأداة: المقطع الجانبي الموازي للمدرج بين العتبتين — يشمل حد الشريط والسطح الانتقالي والأفقي الداخلي والمخروطي، ولا يغطي أسطح الاقتراب والإقلاع عند نهايتي المدرج',
+  f_scope:'نطاق الأداة: حد الشريط والسطح الانتقالي والأفقي الداخلي والمخروطي بين العتبتين، وسطحا الاقتراب وتسلق الإقلاع خلف العتبتين في الفحص الجماعي — بمقاييس المدرجات الآلية رمز 3 و4 في الجدولين 4-1 و4-2، ولا يغطي أسطح إجراءات الطيران الآلي وحماية الأجهزة الملاحية',
   f_rule:'القاعدة: المسافة عن خط المنتصف ≥ نصف عرض الشريط + معامل الميل × (منسوب قمة الجسم − منسوب خط المنتصف) — وفق هندسة أسطح تحديد العوائق في الملحق 14 لمنظمة الطيران المدني الدولي، الجدول 4-1',
   f_disc:'أداة تعليمية استرشادية فقط — لا تغني عن الدراسة الرسمية والرفع المساحي المعتمد وموافقة سلطة الطيران المدني المختصة، والعبرة دائماً بالشريط والأسطح المعلنة في نشرة معلومات الطيران لكل دولة',
   f_credit:'فكرة وتطوير: معاذ عبدالله القصير — مفتوح المصدر برخصة MIT',
   b_title:'فحص جدول نقاط — ألصق من الإكسل أو أرفق ملفاً',
-  b_intro:'عرّف محور المدرج بنقطتي العتبتين بإحداثيات مسقطة بالمتر، ثم ألصق جدول النقاط أو أرفق ملفاً نصياً — تُفحص كل نقطة ضد الأسطح بنفس إعدادات الشريط والميل أعلاه، وتُحسب مسافتها العمودية عن المحور ومنسوب المحور عند محطتها تلقائياً',
+  b_intro:'عرّف محور المدرج بنقطتي العتبتين بإحداثيات مسقطة بالمتر، ثم ألصق جدول النقاط أو أرفق ملفاً نصياً — تُفحص كل نقطة ضد الأسطح بنفس إعدادات الشريط والميل أعلاه، وتُحسب مسافتها العمودية عن المحور ومنسوب المحور عند محطتها تلقائياً. والنقاط خلف العتبتين تُفحص ضد سطحي الاقتراب وتسلق الإقلاع بمقاييس المدرجات الآلية رمز 3 و4: حافة داخلية 280 و180 م على بعد 60 م وميل 2٪',
   b_l_thrA:'العتبة الأولى: شرقية، شمالية، منسوب (م)', b_l_thrB:'العتبة الثانية: شرقية، شمالية، منسوب (م)',
   b_h_thrA:'متري مسقط، أو جغرافي بأحرف الجهات كما في النشرة — مثل 41 41 14.54E في خانة الشرقية و27 27 16.79N في الشمالية — ويُحول تلقائياً', b_h_thrB:'يُفترض منسوب المحور خطياً بين العتبتين',
   b_l_hdef:'ارتفاع الجسم الافتراضي (م)', b_h_hdef:'يُستخدم لأي نقطة بلا عمود ارتفاع خامس',
@@ -304,11 +308,11 @@ const I = {
   b_c1:'نقطة', b_c2:'المسافة عن المحور', b_c3:'المحطة', b_c4:'منسوب المحور', b_c5:'السطح الحاكم',
   b_c6:'المنسوب المسموح', b_c7:'قمة الجسم', b_c8:'الهامش', b_c9:'الحكم',
   b_ok:'✓ مطابق', b_pen:'✗ يخترق', b_in:'✗ داخل الشريط', b_out:'⚠ خارج العتبتين',
-  b_sum:'{n} نقطة: {ok} مطابقة · {pen} مخترقة · {ins} داخل الشريط · {out} خارج العتبتين',
+  b_sum:'{n} نقطة: {ok} مطابقة · {pen} مخترقة · {ins} داخل الشريط · {out} خارج نطاق التغطية',
   b_err_cl:'أكمل إحداثيات العتبتين الست أولاً', b_err_pts:'ما أمكن قراءة أي نقطة — تأكد أن كل سطر يحوي شرقية وشمالية ومنسوباً',
   b_err_xlsx:'تعذرت قراءة الملف في هذا المتصفح — احفظه بصيغة نصية مفصولة بفواصل أو انسخ الخلايا والصقها مباشرة',
   b_err_type:'المدعوم: إكسل ووورد والملفات النصية — البي دي إف والصور لا تُقرأ جداولها بموثوقية، انسخ الجدول من المستند والصقه في المربع',
-  b_click:'النقاط كلها مرسومة الآن في المشهد أعلاه كسور متصل ملون بحكم كل نقطة، والمسقط الأفقي في زاوية المشهد يعرض شكل السور الحقيقي بمقياس موحد — المشهد نفسه يضغط المحور الطولي ليظهر السور كاملاً. إن سلمت النقاط جميعها تقلع الطائرة وتعود فتهبط بسلام، واضغط أي صف لإبراز نقطته وعرض مقطعها، والنقاط خارج العتبتين تقع تحت أسطح الاقتراب والإقلاع التي لا تغطيها الأداة',
+  b_click:'النقاط كلها مرسومة الآن في المشهد أعلاه كسور متصل ملون بحكم كل نقطة، والمسقط الأفقي في زاوية المشهد يعرض شكل السور الحقيقي بمقياس موحد — المشهد نفسه يضغط المحور الطولي ليظهر السور كاملاً. إن سلمت النقاط جميعها تقلع الطائرة وتعود فتهبط بسلام، واضغط أي صف لإبراز نقطته وعرض مقطعها، والنقاط خلف العتبتين تُفحص تلقائياً ضد سطحي الاقتراب وتسلق الإقلاع ويظهر سطحاهما في المشهد خلف نهايتي المدرج',
   b_clear:'مسح النتائج',
   b_l_apt:'المطار — تعبئة العتبتين تلقائياً', b_l_rwy:'المدرج',
   opt_manual:'إدخال يدوي…',
@@ -342,15 +346,18 @@ const I = {
   l_ihe:'Inner horizontal outer edge from CL (m)', h_ihe:'Distance from centreline where the conical surface begins, rising at 5% for a further 100 m',
   h_dnum:'Or type the distance directly, any value up to 8000 m',
   sfT:'transitional surface', sfIH:'inner horizontal surface', sfCon:'conical surface', gov:'Governing surface',
+  sfApp:'approach surface', sfToc:'take-off climb surface', b_endSurf:'approach & take-off climb surfaces',
+  b_nocov:'⚠ Outside coverage',
+  note_bey:'Point lies beyond the threshold — its verdict comes from the {s}; the lateral cross-section does not apply to it',
   opt_f:'Mesh fence', opt_cr:'Tower crane', craneLbl:'Crane',
   never:'No distance clears', v_never:'Object top is above the conical surface top — no lateral distance clears this height',
   far3d:'beyond 3D frame — values and cross-section remain exact',
-  f_scope:'Scope: the lateral profile parallel to the runway between thresholds — strip limit, transitional, inner horizontal and conical surfaces; approach and take-off climb surfaces at the runway ends are not covered',
+  f_scope:'Scope: strip limit, transitional, inner horizontal and conical surfaces between the thresholds, plus the approach and take-off climb surfaces beyond them in batch mode — instrument runway code 3/4 dimensions per Tables 4-1 and 4-2; PANS-OPS procedure surfaces and navaid protection are not covered',
   f_rule:'Rule: distance from centreline ≥ strip half-width + slope factor × (object top elevation − centreline elevation) — per ICAO Annex 14 Vol I obstacle limitation surfaces geometry, Table 4-1',
   f_disc:'Educational advisory tool only — not a substitute for a formal aeronautical study, certified survey, or approval by the competent civil aviation authority. The declared strip and surfaces published in each State AIP always govern.',
   f_credit:'Concept & development: MUATH A. QUSAIER — Open source under the MIT License',
   b_title:'Batch check — paste from Excel or attach a file',
-  b_intro:'Define the runway centreline by its two threshold points in projected metric coordinates, then paste your point table or attach a text file — every point is checked against the surfaces using the strip and slope settings above, with its perpendicular distance and the centreline elevation at its station computed automatically',
+  b_intro:'Define the runway centreline by its two threshold points in projected metric coordinates, then paste your point table or attach a text file — every point is checked against the surfaces using the strip and slope settings above, with its perpendicular distance and the centreline elevation at its station computed automatically. Points beyond the thresholds are checked against the approach and take-off climb surfaces, instrument runway code 3/4 dimensions: inner edges 280 and 180 m at 60 m out, 2% slopes',
   b_l_thrA:'Threshold A: easting, northing, elevation (m)', b_l_thrB:'Threshold B: easting, northing, elevation (m)',
   b_h_thrA:'Projected metres, or geographic with hemisphere letters as in the AIP — e.g. 41 41 14.54E in the easting box and 27 27 16.79N in the northing box — converted automatically', b_h_thrB:'Centreline elevation is interpolated linearly between thresholds',
   b_l_hdef:'Default object height (m)', b_h_hdef:'Used for any point without a fifth height column',
@@ -360,11 +367,11 @@ const I = {
   b_c1:'Point', b_c2:'Distance from CL', b_c3:'Station', b_c4:'CL elevation', b_c5:'Governing surface',
   b_c6:'Max allowed', b_c7:'Object top', b_c8:'Margin', b_c9:'Verdict',
   b_ok:'✓ Compliant', b_pen:'✗ Penetrates', b_in:'✗ Inside strip', b_out:'⚠ Beyond thresholds',
-  b_sum:'{n} points: {ok} compliant · {pen} penetrating · {ins} inside strip · {out} beyond thresholds',
+  b_sum:'{n} points: {ok} compliant · {pen} penetrating · {ins} inside strip · {out} outside coverage',
   b_err_cl:'Fill in all six threshold coordinates first', b_err_pts:'No points could be read — make sure every line has an easting, a northing, and an elevation',
   b_err_xlsx:'Could not read this file in this browser — save it as CSV or copy the cells and paste them directly',
   b_err_type:'Supported: Excel, Word and text files — PDF and image tables cannot be read reliably; copy the table from the document and paste it in the box',
-  b_click:'All points are now drawn in the scene above as a connected fence coloured by each verdict, and the plan inset in the corner shows the fence’s true shape at uniform scale — the scene itself compresses the along-runway axis to fit the whole fence. When every point clears, the aircraft takes off, returns and lands safely. Click any row to highlight its point and load its cross-section; points beyond the thresholds fall under the approach and take-off surfaces, which this tool does not cover',
+  b_click:'All points are now drawn in the scene above as a connected fence coloured by each verdict, and the plan inset in the corner shows the fence’s true shape at uniform scale — the scene itself compresses the along-runway axis to fit the whole fence. When every point clears, the aircraft takes off, returns and lands safely. Click any row to highlight its point and load its cross-section; points beyond the thresholds are checked automatically against the approach and take-off climb surfaces, drawn behind both runway ends',
   b_clear:'Clear results',
   b_l_apt:'Airport — auto-fill the thresholds', b_l_rwy:'Runway',
   opt_manual:'Manual entry…',
@@ -447,6 +454,36 @@ function evaluate(p){
   else dmin = Infinity;
   return {inside, allow, pen, dmin};
 }
+// ====== surfaces beyond the thresholds — Annex 14 Vol I Tables 4-1 & 4-2, instrument runways code 3/4 ======
+// Approach (precision CAT I / non-precision): inner edge 280 m at 60 m from THR, 15% divergence,
+// 3000 m at 2%, 3600 m at 2.5%, then horizontal at 150 m above THR, 15 000 m total.
+// Take-off climb: inner edge 180 m at 60 m from the runway end, 12.5% divergence to 1200 m, 2%, 15 000 m.
+const APP = { inner:140, dist:60, div:0.15, s1:3000, g1:0.02, s2:3600, g2:0.025, cap:150, total:15000 };
+const TOC = { inner:90,  dist:60, div:0.125, half:600, g:0.02, total:15000 };
+// x: metres beyond the threshold along the extended centreline; dAbs: lateral offset from it;
+// thrZ: that end's threshold elevation. The approach datum is the THR elevation, and the take-off
+// climb datum is approximated by the same elevation (clearway NIL). Inner horizontal and conical
+// wrap the end radially from the threshold point. Returns the lowest covering surface, or null.
+function beyondAllowed(p, x, dAbs, thrZ){
+  const cands = [], u = x - APP.dist;
+  if (u >= 0 && u <= APP.total){
+    const zApp = thrZ + Math.min(APP.g1*Math.min(u, APP.s1) + APP.g2*Math.max(0, Math.min(u - APP.s1, APP.s2)), APP.cap);
+    const halfA = APP.inner + APP.div*u;
+    if (dAbs <= halfA) cands.push([zApp, 'sfApp']);
+    else {
+      const zTr = zApp + (dAbs - halfA)/p.slope;      // transitional flank of the approach surface
+      if (zTr < thrZ + p.ihH) cands.push([zTr, 'sfT']);
+    }
+    const halfT = Math.min(TOC.inner + TOC.div*u, TOC.half);
+    if (dAbs <= halfT) cands.push([thrZ + TOC.g*u, 'sfToc']);
+  }
+  const r = Math.hypot(x, dAbs);                       // racetrack arcs about the threshold
+  if (r <= p.ihEnd) cands.push([thrZ + p.ihH, 'sfIH']);
+  else if (r <= p.ihEnd + p.conS*p.conRise) cands.push([thrZ + p.ihH + (r - p.ihEnd)/p.conS, 'sfCon']);
+  if (!cands.length) return null;
+  cands.sort((a,b)=>a[0]-b[0]);
+  return { allow: cands[0][0], sf: cands[0][1] };
+}
 
 // ============ Saudi airports quick-fill (advisory data — the AIP always governs) ============
 const APTS = [{"c":"OEAB","ar":"أبها الدولي","en":"Abha International Airport","r":[{"id":"13/31","a":[18.2499008,42.6442986,2082.39],"b":[18.2308006,42.6689987,2090.32]}]},{"c":"OEAH","ar":"الأحساء الدولي","en":"Al-Ahsa International Airport","r":[{"id":"16/34","a":[25.2985992,49.4812012,179.22],"b":[25.2719994,49.4891014,175.26]}]},{"c":"OEBA","ar":"الباحة","en":"King Saud Bin Abdulaziz (Al Baha) Airport","r":[{"id":"07/25","a":[20.2912006,41.6190987,1670.91],"b":[20.3010998,41.6493988,1655.06]}]},{"c":"OEBH","ar":"بيشة","en":"Bisha Airport","r":[{"id":"18/36","a":[19.9979,42.6242981,1180.19],"b":[19.9703999,42.6213989,1184.45]}]},{"c":"OEDF","ar":"الملك فهد الدولي — الدمام","en":"King Fahd International Airport","r":[{"id":"16L/34R","a":[26.4885998,49.8036995,17.98],"b":[26.4538002,49.8143997,21.95]},{"id":"16R/34L","a":[26.4885998,49.7813988,14.63],"b":[26.4538002,49.792099,17.07]}]},{"c":"OEDM","ar":"الدوادمي","en":"Dawadmi Domestic Airport","r":[{"id":"15/33","a":[24.4622002,44.1144981,919.28],"b":[24.4375,44.1278,923.85]}]},{"c":"OEGN","ar":"جازان — الملك عبدالله","en":"Jizan Regional Airport / King Abdullah bin Abdulaziz Airport","r":[{"id":"15/33","a":[16.9130001,42.5786018,4.88],"b":[16.8890991,42.5928993,6.1]}]},{"c":"OEGS","ar":"القصيم الدولي","en":"Prince Naif bin Abdulaziz International Airport","r":[{"id":"15/33","a":[26.3148003,43.7669983,648.0],"b":[26.2908001,43.7807999,646.18]}]},{"c":"OEGT","ar":"قريات","en":"Gurayat Domestic Airport","r":[{"id":"10/28","a":[31.4158001,37.2640991,509.63],"b":[31.4081001,37.294899,500.18]}]},{"c":"OEHL","ar":"حائل الدولي","en":"Hail International Airport","r":[{"id":"18/36","a":[27.4546639,41.6873722,1001.88],"b":[27.4249194,41.685325,1015.29]}],"aip":1},{"c":"OEJB","ar":"الجبيل","en":"Jubail Airport","r":[{"id":"17/35","a":[27.0566006,49.4006004,5.79],"b":[27.0214996,49.4095993,7.62]}]},{"c":"OEJN","ar":"الملك عبدالعزيز الدولي — جدة","en":"King Abdulaziz International Airport","r":[{"id":"16C/34C","a":[21.69507,39.151543,7.92],"b":[21.661179,39.164917,7.92]},{"id":"16L/34R","a":[21.700436,39.167131,9.14],"b":[21.6665,39.1805,14.63]},{"id":"16R/34L","a":[21.7027,39.1269,3.96],"b":[21.6705,39.139599,3.96]}]},{"c":"OEMA","ar":"الأمير محمد بن عبدالعزيز — المدينة","en":"Prince Mohammad Bin Abdulaziz Airport","r":[{"id":"17/35","a":[24.5764065,39.7033157,655.62],"b":[24.5379925,39.7114716,634.9]},{"id":"18/36","a":[24.5634995,39.7039986,653.49],"b":[24.5359993,39.7019997,633.68]}]},{"c":"OENG","ar":"نجران","en":"Najran Domestic Airport","r":[{"id":"06/24","a":[17.6044998,44.4067001,1213.71],"b":[17.6182995,44.4315987,1206.4]}]},{"c":"OENN","ar":"خليج نيوم","en":"Neom Bay Airport","r":[{"id":"15/33","a":[27.935499,35.284599,7.62],"b":[27.919701,35.2929,9.75]}]},{"c":"OEPA","ar":"القيصومة — حفر الباطن","en":"Qaisumah–Hafar Al-Batin International Airport","r":[{"id":"16/34","a":[28.348867,46.121231,356.92],"b":[28.323328,46.132812,357.84]}]},{"c":"OERF","ar":"رفحاء","en":"Rafha Domestic Airport","r":[{"id":"11/29","a":[29.6317005,43.4765015,444.7],"b":[29.6210003,43.5049019,449.28]}]},{"c":"OERK","ar":"الملك خالد الدولي — الرياض","en":"King Khalid International Airport","r":[{"id":"15L/33R","a":[24.9769001,46.7019997,619.66],"b":[24.9440002,46.7228012,613.26]},{"id":"15R/33L","a":[24.9708996,46.6749001,624.54],"b":[24.9379997,46.6957016,619.66]}]},{"c":"OERR","ar":"عرعر","en":"Arar Domestic Airport","r":[{"id":"10/28","a":[30.9102001,41.1227989,552.6],"b":[30.9030991,41.1537018,549.86]}]},{"c":"OESH","ar":"شرورة","en":"Sharurah Domestic Airport","r":[{"id":"08/26","a":[17.4652996,47.1041985,712.01],"b":[17.468399,47.1385994,720.24]}]},{"c":"OESK","ar":"الجوف الدولي","en":"Al-Jawf International Airport","r":[{"id":"10/28","a":[29.7879009,40.0812988,689.15],"b":[29.7823009,40.1186981,688.85]}]},{"c":"OETB","ar":"الأمير سلطان بن عبدالعزيز — تبوك","en":"Prince Sultan bin Abdulaziz International Airport","r":[{"id":"06/24","a":[28.3691998,36.6198997,775.72],"b":[28.382,36.6509018,777.54]},{"id":"13/31","a":[28.3812008,36.5940018,771.14],"b":[28.3621998,36.6170998,773.89]}]},{"c":"OETF","ar":"الطائف الدولي","en":"Taif International Airport","r":[{"id":"07/25","a":[21.4773006,40.5205994,1477.67],"b":[21.4862995,40.5555,1443.84]},{"id":"17/35","a":[21.5063992,40.5409012,1448.71],"b":[21.4764004,40.5453987,1455.42]}]},{"c":"OETR","ar":"طريف","en":"Turaif Domestic Airport","r":[{"id":"10/28","a":[31.6963291,38.7159996,851.61],"b":[31.6891708,38.7464981,851.0]}]},{"c":"OEWD","ar":"وادي الدواسر","en":"Wadi Al Dawasir Domestic Airport","r":[{"id":"10/28","a":[20.5070992,45.1852989,628.5],"b":[20.5014,45.2137985,625.45]}]},{"c":"OEWJ","ar":"الوجه","en":"Al Wajh Domestic Airport","r":[{"id":"15/33","a":[26.2105007,36.4686012,19.81],"b":[26.1865997,36.4836006,20.12]}]},{"c":"OEYN","ar":"الأمير عبدالمحسن بن عبدالعزيز — ينبع","en":"Prince Abdulmohsen Bin Abdulaziz International Airport","r":[{"id":"10/28","a":[24.1474991,38.0480003,5.49],"b":[24.1408997,38.0788002,7.92]}]}];
@@ -499,7 +536,7 @@ function rwyPick(){
   if(batchRows) runBatch();
 }
 // ================= batch check =================
-let batchRows = null, batchL = 0, batchSel = -1, aptZone = 0;
+let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0;
 // geographic line: [id,] latitude, longitude (decimal or D M S with N/S/E/W letters), ground elev [, height]
 function parseGeoLine(line){
   const toks = line.split(/[\s;,،|()°'":′″]+/).filter(Boolean);
@@ -630,15 +667,25 @@ function runBatch(){
     const clz = bp.aZ + (bp.bZ-bp.aZ)*sc/L;
     const cx = (pt.E-bp.aE)*uy - (pt.N-bp.aN)*ux;   // signed cross-track, for the true plan inset
     const q = {...p0, cl:clz, g:pt.Z, d, H, top:pt.Z+H};
-    return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e:evaluate(q), outside:(s<0 || s>L) };
+    const x = s < 0 ? -s : (s > L ? s - L : 0);
+    let e, sf = null, nocov = false;
+    if (x >= APP.dist){                       // beyond the threshold: approach / take-off climb territory
+      const bey = beyondAllowed(q, x, d, s < 0 ? bp.aZ : bp.bZ);
+      if (bey){ e = { inside:false, allow:bey.allow, pen:q.top - bey.allow, dmin:NaN }; sf = bey.sf; }
+      else { e = { inside:false, allow:NaN, pen:NaN, dmin:NaN }; nocov = true; }
+    } else e = evaluate(q);                   // between thresholds, or within the 60 m strip extension
+    return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e, sf, nocov, outside:(s<0 || s>L) };
   });
-  batchL = L; batchSel = -1;
+  batchL = L; batchSel = -1; batchThr = { a: bp.aZ, b: bp.bZ };
   renderBatch();
   // auto-load the governing (worst-margin) point into the single-point view,
   // so the verdict card and cross-section always agree with the scene
-  let w = 0;
-  for (let i=1;i<batchRows.length;i++) if (batchRows[i].e.pen > batchRows[w].e.pen) w = i;
-  loadRow(w, false);
+  let w = -1;
+  for (let i=0;i<batchRows.length;i++){
+    if (batchRows[i].nocov) continue;
+    if (w < 0 || batchRows[i].e.pen > batchRows[w].e.pen) w = i;
+  }
+  if (w >= 0) loadRow(w, false); else update();
 }
 function renderBatch(){
   if (!batchRows) return;
@@ -646,14 +693,14 @@ function renderBatch(){
   let nok=0, npen=0, nin=0, nout=0;
   const body = batchRows.map((r,i)=>{
     let vcls, vtxt;
-    if (r.e.inside){ vcls='cell-bad'; vtxt=t.b_in; nin++; }
+    if (r.nocov){ vcls='cell-warn'; vtxt=t.b_nocov; nout++; }
+    else if (r.e.inside){ vcls='cell-bad'; vtxt=t.b_in; nin++; }
     else if (r.e.pen > 0){ vcls='cell-bad'; vtxt=t.b_pen+' '+r.e.pen.toFixed(2)+t.m; npen++; }
     else { vcls='cell-ok'; vtxt=t.b_ok+' '+(-r.e.pen).toFixed(2)+t.m; nok++; }
-    if (r.outside){ nout++; if (vcls==='cell-ok') vcls='cell-warn'; vtxt=t.b_out+' · '+vtxt; }
-    const sName = r.e.inside ? '—' : surfNameAt(r.q, r.d, t);
-    const allow = r.e.inside ? '—' : r.e.allow.toFixed(2);
-    const marg  = r.e.inside ? '—' : (-r.e.pen).toFixed(2);
-    return '<tr onclick="loadRow('+i+')"><td>'+r.pt.id+'</td><td>'+r.d.toFixed(1)+'</td><td>'+r.sc.toFixed(0)+
+    const sName = (r.nocov || r.e.inside) ? '—' : (r.sf ? t[r.sf] : surfNameAt(r.q, r.d, t));
+    const allow = (r.nocov || r.e.inside) ? '—' : r.e.allow.toFixed(2);
+    const marg  = (r.nocov || r.e.inside) ? '—' : (-r.e.pen).toFixed(2);
+    return '<tr onclick="loadRow('+i+')"><td>'+r.pt.id+'</td><td>'+r.d.toFixed(1)+'</td><td>'+r.s.toFixed(0)+
       '</td><td>'+r.clz.toFixed(2)+'</td><td>'+sName+'</td><td>'+allow+'</td><td>'+r.q.top.toFixed(2)+
       '</td><td>'+marg+'</td><td class="'+vcls+'">'+vtxt+'</td></tr>';
   }).join('');
@@ -667,7 +714,7 @@ function renderBatch(){
   document.getElementById('b_click').style.display='block';
 }
 function clearBatch(){
-  batchRows = null; batchSel = -1;
+  batchRows = null; batchSel = -1; batchThr = null;
   document.getElementById('bSummary').style.display='none';
   document.getElementById('bTableWrap').innerHTML='';
   document.getElementById('b_csvbtn').style.display='none';
@@ -690,13 +737,14 @@ function loadRow(i, scroll=true){
 function exportBatch(){
   if (!batchRows) return;
   const lines = ['id,dist_CL_m,station_m,CL_elev_m,surface_rank,allowed_elev_m,top_elev_m,margin_m,verdict'];
+  const sfMap = { sfApp:'approach', sfToc:'take_off_climb', sfT:'transitional', sfIH:'inner_horizontal', sfCon:'conical' };
   for (const r of batchRows){
-    let v = r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK');
-    if (r.outside) v = 'BEYOND_THR+'+v;
-    const sp2 = surfParts(r.q);
-    const sName = r.e.inside ? '' : (r.d<=sp2.tEnd ? 'transitional' : (r.d<=sp2.ihEnd ? 'inner_horizontal' : 'conical'));
-    lines.push([r.pt.id, r.d.toFixed(2), r.sc.toFixed(1), r.clz.toFixed(2), sName,
-      r.e.inside?'':r.e.allow.toFixed(2), r.q.top.toFixed(2), r.e.inside?'':(-r.e.pen).toFixed(2), v].join(','));
+    let v = r.nocov ? 'NO_COVERAGE' : (r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK'));
+    if (r.outside && !r.nocov) v = 'BEYOND_THR+'+v;
+    const sp2 = surfParts(r.q), blank = r.nocov || r.e.inside;
+    const sName = blank ? '' : (r.sf ? sfMap[r.sf] : (r.d<=sp2.tEnd ? 'transitional' : (r.d<=sp2.ihEnd ? 'inner_horizontal' : 'conical')));
+    lines.push([r.pt.id, r.d.toFixed(2), r.s.toFixed(1), r.clz.toFixed(2), sName,
+      blank?'':r.e.allow.toFixed(2), r.q.top.toFixed(2), blank?'':(-r.e.pen).toFixed(2), v].join(','));
   }
   const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
@@ -742,6 +790,21 @@ function update(){
   else if (e.pen > 0){ v.className='verdict bad'; v.textContent = t.v_pen.replace('{s}', sName).replace('{x}', e.pen.toFixed(2)); }
   else { v.className='verdict good'; v.textContent = t.v_ok.replace('{s}', sName).replace('{x}', (-e.pen).toFixed(2)); }
   document.getElementById('viewnote').textContent = (view==='3d') ? t.note3d : t.note2d;
+  // selected batch point beyond the thresholds: the card mirrors that row's own surface verdict,
+  // so the card and the results table always agree
+  if (batchRows && batchSel >= 0){
+    const r = batchRows[batchSel];
+    if ((r.sf || r.nocov) && Math.abs(p.d - r.d) < 0.01 && Math.abs(p.g - r.pt.Z) < 0.01){
+      document.getElementById('nTop').textContent = fmt(r.q.top);
+      document.getElementById('nAllow').textContent = r.nocov ? '—' : fmt(r.e.allow);
+      document.getElementById('nPen').textContent = r.nocov ? '—' : (r.e.pen > 0 ? t.pen + fmt(r.e.pen) : t.marg + fmt(-r.e.pen));
+      document.getElementById('nMin').textContent = '—';
+      if (r.nocov){ v.className = 'verdict warn'; v.textContent = t.b_nocov; }
+      else if (r.e.pen > 0){ v.className = 'verdict bad'; v.textContent = t.v_pen.replace('{s}', t[r.sf]).replace('{x}', r.e.pen.toFixed(2)); }
+      else { v.className = 'verdict good'; v.textContent = t.v_ok.replace('{s}', t[r.sf]).replace('{x}', (-r.e.pen).toFixed(2)); }
+      document.getElementById('viewnote').textContent = t.note_bey.replace('{s}', r.nocov ? '—' : t[r.sf]);
+    }
+  }
   lastP=p; lastE=e;
   if (view==='3d') draw3d(p,e); else draw2d(p,e);
 }
@@ -982,9 +1045,10 @@ function draw3d(p,e){
   const ok = !e.inside && e.pen<=0;
   const z0=-Zl*0.92, z1=Zl*0.92;
   if (hasBatch){
-    // map real stations [0..batchL] onto the scene runway, draw the fence polyline point-to-point
-    const BP = batchRows.map(r=>({ x:Math.min(r.d, 540), z: z1 - (r.sc/Math.max(batchL,1))*(z1-z0),
-      y0:r.relg, y1:r.relg + r.H, bad:(r.e.inside || r.e.pen>0), out:r.outside }));
+    // map real stations onto the scene runway — beyond-threshold stations extend past the slab, clamped to the terrain
+    const zOf = s => Math.max(-(Zt-14), Math.min(Zt-14, z1 - (s/Math.max(batchL,1))*(z1-z0)));
+    const BP = batchRows.map(r=>({ x:Math.min(r.d, 540), z: zOf(r.s),
+      y0:r.relg, y1:r.relg + r.H, bad:(r.e.inside || r.e.pen>0), out:r.nocov }));
     for(let i=0;i<BP.length-1;i++){
       const a=BP[i], b=BP[i+1], bad=a.bad||b.bad;
       const col = bad ? [178,56,59] : [46,139,87];
@@ -1097,6 +1161,23 @@ function draw3d(p,e){
       prev=[xq,allowRelAt(p,xq)];
     }
   }
+  // ---- 5b. approach & take-off climb sheets beyond the thresholds (batch mode) ----
+  if (hasBatch && batchThr){
+    const k = (z1 - z0)/Math.max(batchL, 1);           // scene units per metre along the runway
+    for (const end of [{ze:z1, dir:1, rel:batchThr.a - p.cl}, {ze:z0, dir:-1, rel:batchThr.b - p.cl}]){
+      const umax = Math.min(1500, (Zt - 14 - Math.abs(end.ze))/k);
+      if (umax < APP.dist + 60) continue;
+      const seg = (umax - APP.dist)/5;
+      for (let i2=0; i2<5; i2++){
+        const ua = APP.dist + i2*seg, ub = ua + seg;
+        const ya = end.rel + APP.g1*(ua - APP.dist), yb = end.rel + APP.g1*(ub - APP.dist);
+        const ha = APP.inner + APP.div*(ua - APP.dist), hb = APP.inner + APP.div*(ub - APP.dist);
+        const za = end.ze + end.dir*ua*k, zb = end.ze + end.dir*ub*k;
+        quad([-ha,ya,za],[ha,ya,za],[hb,yb,zb],[-hb,yb,zb], [96,120,126], 0.16, 'rgba(22,69,78,.45)', 1);
+      }
+      line([0, end.rel, end.ze + end.dir*APP.dist*k], [0, end.rel + APP.g1*(umax - APP.dist), end.ze + end.dir*umax*k], 'rgba(22,69,78,.35)', 1, [6,5]);
+    }
+  }
   // penetration slice above the surface
   if(!hasBatch && !e.inside && e.pen>0 && !farClip){
     const surfAtD=allowRelAt(p, dShow);
@@ -1121,15 +1202,22 @@ function draw3d(p,e){
   label(t.stripLbl+' '+p.strip, P3(p.strip,0.1,Zl*0.55), '#0e6a70', -8);
   label(t.surf, P3(xmax*0.93,(xmax*0.93-p.strip)/p.slope,-Zl*0.25), '#16454E', -8);
   if (hasBatch){
+    if (batchThr){
+      const k2 = (z1 - z0)/Math.max(batchL, 1);
+      const um = Math.min(1500, (Zt - 14 - Math.abs(z1))/k2);
+      if (um > APP.dist + 60)
+        label(t.b_endSurf, P3(0, (batchThr.a - p.cl) + APP.g1*(um*0.55 - APP.dist) + 2, z1 + um*0.55*k2), '#16454E', -6);
+    }
     for(let i=0;i<batchRows.length;i++){
       const r=batchRows[i], sel=(i===batchSel);
       const bad=(r.e.inside || r.e.pen>0);
-      const zz = (Zl*0.92) - (r.sc/Math.max(batchL,1))*(2*Zl*0.92);
+      const zz = Math.max(-(Zt-14), Math.min(Zt-14, (Zl*0.92) - (r.s/Math.max(batchL,1))*(2*Zl*0.92)));
       const xx = Math.min(r.d, 540);
-      const col = bad ? '#8c2a2d' : (r.outside ? '#8a650f' : '#1d6b43');
+      const col = bad ? '#8c2a2d' : (r.nocov ? '#8a650f' : '#1d6b43');
       const txt = sel
-        ? r.pt.id+' — '+(r.e.inside ? t.inside : (r.e.pen>0 ? t.pen+r.e.pen.toFixed(2)+t.m : t.marg+(-r.e.pen).toFixed(2)+t.m))+(r.outside?' · '+t.b_out:'')
-        : '‎'+r.pt.id+(r.e.inside ? ' ✗' : (r.e.pen>0 ? ' ✗'+r.e.pen.toFixed(1) : ' +'+(-r.e.pen).toFixed(1)));
+        ? (r.nocov ? r.pt.id+' — '+t.b_nocov
+          : r.pt.id+' — '+(r.e.inside ? t.inside : (r.e.pen>0 ? t.pen+r.e.pen.toFixed(2)+t.m : t.marg+(-r.e.pen).toFixed(2)+t.m)))
+        : '‎'+r.pt.id+(r.nocov ? ' ⚠' : (r.e.inside ? ' ✗' : (r.e.pen>0 ? ' ✗'+r.e.pen.toFixed(1) : ' +'+(-r.e.pen).toFixed(1))));
       label(txt, P3(xx, r.relg + r.H + 0.7, zz), col, sel?-10:-5);
     }
   } else {
@@ -1180,7 +1268,7 @@ function draw3d(p,e){
       const r=prs[i], bad=(r.e.inside||r.e.pen>0);
       const [px2,py2]=MX(r.s,r.cx);
       ctx.beginPath(); ctx.arc(px2,py2, i===batchSel?4.5:2.8, 0, 6.3);
-      ctx.fillStyle = bad ? '#B2383B' : (r.outside ? '#a97a17' : '#2E8B57'); ctx.fill();
+      ctx.fillStyle = bad ? '#B2383B' : (r.nocov ? '#a97a17' : '#2E8B57'); ctx.fill();
       if (i===batchSel){ ctx.strokeStyle='#16454E'; ctx.lineWidth=1.5; ctx.stroke(); }
     }
     ctx.font = 'bold 12px Tahoma'; ctx.textAlign = 'center';
