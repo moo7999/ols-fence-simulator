@@ -678,9 +678,9 @@ function clearBatch(){
 function loadRow(i, scroll=true){
   const r = batchRows[i];
   batchSel = i;
-  document.getElementById('cl').value = r.clz.toFixed(2);
+  document.getElementById('cl').value = r.clz.toFixed(3);
   document.getElementById('g').value  = r.pt.Z.toFixed(2);
-  document.getElementById('distNum').value = r.d.toFixed(1);
+  document.getElementById('distNum').value = r.d.toFixed(2);
   document.getElementById('dist').value = Math.min(r.d, 600);
   document.getElementById('hgt').value = Math.min(Math.max(r.H, 0.5), 12);
   update();
