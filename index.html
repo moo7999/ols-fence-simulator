@@ -1270,8 +1270,8 @@ function draw3d(p,e){
     ctx.beginPath(); ctx.moveTo(r1x,r1y); ctx.lineTo(r2x,r2y); ctx.stroke();
     // threshold designators at each end of the slab
     ctx.font = 'bold 10px Tahoma'; ctx.textAlign = 'center'; ctx.fillStyle = '#16454E';
-    ctx.fillText(thrName(0), r1x - 17, r1y - 7);
-    ctx.fillText(thrName(1), r2x + 17, r2y - 7);
+    ctx.fillText(thrName(0), Math.max(ix + 26, r1x - 17), r1y - 7);
+    ctx.fillText(thrName(1), Math.min(ix + IW - 26, r2x + 17), r2y - 7);
     // strip edges (dashed teal) at ±strip half-width
     ctx.strokeStyle = 'rgba(31,154,160,.8)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
     for (const sg of [p.strip, -p.strip]){
