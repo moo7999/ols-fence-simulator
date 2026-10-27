@@ -542,6 +542,7 @@ function rwyPick(){
 }
 // ================= batch check =================
 let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null;
+let preBatch = null;   // the single-point inputs as the user left them, before the batch auto-loaded a row
 // show each threshold's runway designator next to its input box, in the scene and on the plan inset
 function thrName(which){
   const t = T();
@@ -676,6 +677,10 @@ function runBatch(){
   if (L < 1){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
   const pts = parsePoints(document.getElementById('bData').value);
   if (!pts.length){ batchRows=null; showBatchMsg(t.b_err_pts, true); return; }
+  if (!preBatch){
+    const v = id => document.getElementById(id).value;
+    preBatch = { cl:v('cl'), g:v('g'), dn:v('distNum'), ds:v('dist'), h:v('hgt') };
+  }
   const p0 = params(), ux = dx/L, uy = dy/L;
   batchRows = pts.map(pt=>{
     const H = pt.H ?? (Number.isFinite(bp.H0) ? bp.H0 : 0);
@@ -738,6 +743,12 @@ function clearBatch(){
   document.getElementById('b_csvbtn').style.display='none';
   document.getElementById('b_clearbtn').style.display='none';
   document.getElementById('b_click').style.display='none';
+  document.getElementById('bData').value='';                 // the pasted points go too
+  if (preBatch){                                             // and the single-point inputs return to what
+    const sv = (id,v)=>{ document.getElementById(id).value = v; };  // the user had before the batch loaded a row
+    sv('cl', preBatch.cl); sv('g', preBatch.g); sv('distNum', preBatch.dn); sv('dist', preBatch.ds); sv('hgt', preBatch.h);
+    preBatch = null;
+  }
   update();
 }
 function loadRow(i, scroll=true){
@@ -934,7 +945,7 @@ function draw3d(p,e){
   const Zt = 470;          // terrain length
   const Xf = 300;          // terrain side extension
   const cx = xmax*0.45, cy2=(relG+p.H)*YEX*0.4, cz=0;
-  const groundAt = x => (x<=45?0 : x>=75?relG : relG*(x-45)/30);
+  const groundAt = x => { const a=Math.abs(x); return a<=45?0 : a>=75?relG : relG*(a-45)/30; };
   const eyeY = groundAt(cam.wx)*YEX + 1.7*YEX;
 
   // sky
@@ -1019,7 +1030,7 @@ function draw3d(p,e){
   })();
   // ---- 0b. silhouette skirt: fill below the terrain outline (aerial angles) ----
   (function(){
-    const C=[toCam(-40-Xf,0,-Zt),toCam(-40-Xf,0,Zt),toCam(xmax+Xf,relG,Zt),toCam(xmax+Xf,relG,-Zt)];
+    const C=[toCam(-40-Xf,relG,-Zt),toCam(-40-Xf,relG,Zt),toCam(xmax+Xf,relG,Zt),toCam(xmax+Xf,relG,-Zt)];
     if(C.some(c2=>c2[2]<NEAR+2)) return;
     const S=C.map(toScr);
     const yTop=Math.max(0,Math.min(...S.map(P=>P[1])));
@@ -1039,7 +1050,9 @@ function draw3d(p,e){
 
   // ---- 1. terrain strips ----
   const STEP=47;
-  const cols=[[-40-Xf,-40,0,0],[-40,45,0,0],[45,75,0,relG],[75,xmax,relG,relG],[xmax,xmax+Xf,relG,relG]];
+  // symmetric ground: runway bench at datum, terrain on BOTH sides at the object's ground elevation —
+  // one plane to the horizon, no one-sided cliff
+  const cols=[[-40-Xf,-75,relG,relG],[-75,-45,relG,0],[-45,45,0,0],[45,75,0,relG],[75,xmax,relG,relG],[xmax,xmax+Xf,relG,relG]];
   for(let z=-Zt; z<Zt; z+=STEP){
     const even = (Math.round(z/STEP)%2===0);
     const sand = even ? [227,212,175] : [221,205,166];
