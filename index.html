@@ -210,8 +210,8 @@
         <div class="ctl">
           <label id="b_l_thrA"></label>
           <div class="trio">
-            <input type="number" id="aE" step="0.01" placeholder="E">
-            <input type="number" id="aN" step="0.01" placeholder="N">
+            <input type="text" id="aE" inputmode="decimal" placeholder="E" style="direction:ltr">
+            <input type="text" id="aN" inputmode="decimal" placeholder="N" style="direction:ltr">
             <input type="number" id="aZ" step="0.01" placeholder="Z">
           </div>
           <div class="hint" id="b_h_thrA"></div>
@@ -219,8 +219,8 @@
         <div class="ctl">
           <label id="b_l_thrB"></label>
           <div class="trio">
-            <input type="number" id="bE" step="0.01" placeholder="E">
-            <input type="number" id="bN" step="0.01" placeholder="N">
+            <input type="text" id="bE" inputmode="decimal" placeholder="E" style="direction:ltr">
+            <input type="text" id="bN" inputmode="decimal" placeholder="N" style="direction:ltr">
             <input type="number" id="bZ" step="0.01" placeholder="Z">
           </div>
           <div class="hint" id="b_h_thrB"></div>
@@ -296,10 +296,10 @@ const I = {
   b_title:'فحص جدول نقاط — ألصق من الإكسل أو أرفق ملفاً',
   b_intro:'عرّف محور المدرج بنقطتي العتبتين بإحداثيات مسقطة بالمتر، ثم ألصق جدول النقاط أو أرفق ملفاً نصياً — تُفحص كل نقطة ضد الأسطح بنفس إعدادات الشريط والميل أعلاه، وتُحسب مسافتها العمودية عن المحور ومنسوب المحور عند محطتها تلقائياً',
   b_l_thrA:'العتبة الأولى: شرقية، شمالية، منسوب (م)', b_l_thrB:'العتبة الثانية: شرقية، شمالية، منسوب (م)',
-  b_h_thrA:'نفس نظام إحداثيات النقاط — أي نظام مسقط بالمتر', b_h_thrB:'يُفترض منسوب المحور خطياً بين العتبتين',
+  b_h_thrA:'متري مسقط، أو جغرافي بأحرف الجهات كما في النشرة — مثل 41 41 14.54E في خانة الشرقية و27 27 16.79N في الشمالية — ويُحول تلقائياً', b_h_thrB:'يُفترض منسوب المحور خطياً بين العتبتين',
   b_l_hdef:'ارتفاع الجسم الافتراضي (م)', b_h_hdef:'يُستخدم لأي نقطة بلا عمود ارتفاع خامس',
   b_l_data:'النقاط: رقم، شرقية، شمالية، منسوب الأرض، ارتفاع اختياري',
-  b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف داخل الأرقام',
+  b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف. وتُقبل الإحداثيات الجغرافية كما في خطابات الهيئة — عشرية أو درجات ودقائق وثوان بأحرف الجهات، خط العرض ثم الطول ثم منسوب الأرض فارتفاع اختياري — وتُحول تلقائياً على نطاق المطار المختار',
   b_file:'إرفاق ملف…', b_run:'افحص النقاط', b_sample:'مثال جاهز', b_csv:'تنزيل النتائج',
   b_c1:'نقطة', b_c2:'المسافة عن المحور', b_c3:'المحطة', b_c4:'منسوب المحور', b_c5:'السطح الحاكم',
   b_c6:'المنسوب المسموح', b_c7:'قمة الجسم', b_c8:'الهامش', b_c9:'الحكم',
@@ -352,10 +352,10 @@ const I = {
   b_title:'Batch check — paste from Excel or attach a file',
   b_intro:'Define the runway centreline by its two threshold points in projected metric coordinates, then paste your point table or attach a text file — every point is checked against the surfaces using the strip and slope settings above, with its perpendicular distance and the centreline elevation at its station computed automatically',
   b_l_thrA:'Threshold A: easting, northing, elevation (m)', b_l_thrB:'Threshold B: easting, northing, elevation (m)',
-  b_h_thrA:'Same coordinate system as the points — any projected system in metres', b_h_thrB:'Centreline elevation is interpolated linearly between thresholds',
+  b_h_thrA:'Projected metres, or geographic with hemisphere letters as in the AIP — e.g. 41 41 14.54E in the easting box and 27 27 16.79N in the northing box — converted automatically', b_h_thrB:'Centreline elevation is interpolated linearly between thresholds',
   b_l_hdef:'Default object height (m)', b_h_hdef:'Used for any point without a fifth height column',
   b_l_data:'Points: id, easting, northing, ground elevation, optional height',
-  b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators inside numbers',
+  b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators. Geographic coordinates as written in authority letters are accepted too — decimal or D-M-S with hemisphere letters, latitude then longitude then ground elevation and optional height — converted automatically in the selected airport\u2019s zone',
   b_file:'Attach file…', b_run:'Check points', b_sample:'Load sample', b_csv:'Download results',
   b_c1:'Point', b_c2:'Distance from CL', b_c3:'Station', b_c4:'CL elevation', b_c5:'Governing surface',
   b_c6:'Max allowed', b_c7:'Object top', b_c8:'Margin', b_c9:'Verdict',
@@ -450,10 +450,10 @@ function evaluate(p){
 
 // ============ Saudi airports quick-fill (advisory data — the AIP always governs) ============
 const APTS = [{"c":"OEAB","ar":"أبها الدولي","en":"Abha International Airport","r":[{"id":"13/31","a":[18.2499008,42.6442986,2082.39],"b":[18.2308006,42.6689987,2090.32]}]},{"c":"OEAH","ar":"الأحساء الدولي","en":"Al-Ahsa International Airport","r":[{"id":"16/34","a":[25.2985992,49.4812012,179.22],"b":[25.2719994,49.4891014,175.26]}]},{"c":"OEBA","ar":"الباحة","en":"King Saud Bin Abdulaziz (Al Baha) Airport","r":[{"id":"07/25","a":[20.2912006,41.6190987,1670.91],"b":[20.3010998,41.6493988,1655.06]}]},{"c":"OEBH","ar":"بيشة","en":"Bisha Airport","r":[{"id":"18/36","a":[19.9979,42.6242981,1180.19],"b":[19.9703999,42.6213989,1184.45]}]},{"c":"OEDF","ar":"الملك فهد الدولي — الدمام","en":"King Fahd International Airport","r":[{"id":"16L/34R","a":[26.4885998,49.8036995,17.98],"b":[26.4538002,49.8143997,21.95]},{"id":"16R/34L","a":[26.4885998,49.7813988,14.63],"b":[26.4538002,49.792099,17.07]}]},{"c":"OEDM","ar":"الدوادمي","en":"Dawadmi Domestic Airport","r":[{"id":"15/33","a":[24.4622002,44.1144981,919.28],"b":[24.4375,44.1278,923.85]}]},{"c":"OEGN","ar":"جازان — الملك عبدالله","en":"Jizan Regional Airport / King Abdullah bin Abdulaziz Airport","r":[{"id":"15/33","a":[16.9130001,42.5786018,4.88],"b":[16.8890991,42.5928993,6.1]}]},{"c":"OEGS","ar":"القصيم الدولي","en":"Prince Naif bin Abdulaziz International Airport","r":[{"id":"15/33","a":[26.3148003,43.7669983,648.0],"b":[26.2908001,43.7807999,646.18]}]},{"c":"OEGT","ar":"قريات","en":"Gurayat Domestic Airport","r":[{"id":"10/28","a":[31.4158001,37.2640991,509.63],"b":[31.4081001,37.294899,500.18]}]},{"c":"OEHL","ar":"حائل الدولي","en":"Hail International Airport","r":[{"id":"18/36","a":[27.4546639,41.6873722,1001.88],"b":[27.4249194,41.685325,1015.29]}],"aip":1},{"c":"OEJB","ar":"الجبيل","en":"Jubail Airport","r":[{"id":"17/35","a":[27.0566006,49.4006004,5.79],"b":[27.0214996,49.4095993,7.62]}]},{"c":"OEJN","ar":"الملك عبدالعزيز الدولي — جدة","en":"King Abdulaziz International Airport","r":[{"id":"16C/34C","a":[21.69507,39.151543,7.92],"b":[21.661179,39.164917,7.92]},{"id":"16L/34R","a":[21.700436,39.167131,9.14],"b":[21.6665,39.1805,14.63]},{"id":"16R/34L","a":[21.7027,39.1269,3.96],"b":[21.6705,39.139599,3.96]}]},{"c":"OEMA","ar":"الأمير محمد بن عبدالعزيز — المدينة","en":"Prince Mohammad Bin Abdulaziz Airport","r":[{"id":"17/35","a":[24.5764065,39.7033157,655.62],"b":[24.5379925,39.7114716,634.9]},{"id":"18/36","a":[24.5634995,39.7039986,653.49],"b":[24.5359993,39.7019997,633.68]}]},{"c":"OENG","ar":"نجران","en":"Najran Domestic Airport","r":[{"id":"06/24","a":[17.6044998,44.4067001,1213.71],"b":[17.6182995,44.4315987,1206.4]}]},{"c":"OENN","ar":"خليج نيوم","en":"Neom Bay Airport","r":[{"id":"15/33","a":[27.935499,35.284599,7.62],"b":[27.919701,35.2929,9.75]}]},{"c":"OEPA","ar":"القيصومة — حفر الباطن","en":"Qaisumah–Hafar Al-Batin International Airport","r":[{"id":"16/34","a":[28.348867,46.121231,356.92],"b":[28.323328,46.132812,357.84]}]},{"c":"OERF","ar":"رفحاء","en":"Rafha Domestic Airport","r":[{"id":"11/29","a":[29.6317005,43.4765015,444.7],"b":[29.6210003,43.5049019,449.28]}]},{"c":"OERK","ar":"الملك خالد الدولي — الرياض","en":"King Khalid International Airport","r":[{"id":"15L/33R","a":[24.9769001,46.7019997,619.66],"b":[24.9440002,46.7228012,613.26]},{"id":"15R/33L","a":[24.9708996,46.6749001,624.54],"b":[24.9379997,46.6957016,619.66]}]},{"c":"OERR","ar":"عرعر","en":"Arar Domestic Airport","r":[{"id":"10/28","a":[30.9102001,41.1227989,552.6],"b":[30.9030991,41.1537018,549.86]}]},{"c":"OESH","ar":"شرورة","en":"Sharurah Domestic Airport","r":[{"id":"08/26","a":[17.4652996,47.1041985,712.01],"b":[17.468399,47.1385994,720.24]}]},{"c":"OESK","ar":"الجوف الدولي","en":"Al-Jawf International Airport","r":[{"id":"10/28","a":[29.7879009,40.0812988,689.15],"b":[29.7823009,40.1186981,688.85]}]},{"c":"OETB","ar":"الأمير سلطان بن عبدالعزيز — تبوك","en":"Prince Sultan bin Abdulaziz International Airport","r":[{"id":"06/24","a":[28.3691998,36.6198997,775.72],"b":[28.382,36.6509018,777.54]},{"id":"13/31","a":[28.3812008,36.5940018,771.14],"b":[28.3621998,36.6170998,773.89]}]},{"c":"OETF","ar":"الطائف الدولي","en":"Taif International Airport","r":[{"id":"07/25","a":[21.4773006,40.5205994,1477.67],"b":[21.4862995,40.5555,1443.84]},{"id":"17/35","a":[21.5063992,40.5409012,1448.71],"b":[21.4764004,40.5453987,1455.42]}]},{"c":"OETR","ar":"طريف","en":"Turaif Domestic Airport","r":[{"id":"10/28","a":[31.6963291,38.7159996,851.61],"b":[31.6891708,38.7464981,851.0]}]},{"c":"OEWD","ar":"وادي الدواسر","en":"Wadi Al Dawasir Domestic Airport","r":[{"id":"10/28","a":[20.5070992,45.1852989,628.5],"b":[20.5014,45.2137985,625.45]}]},{"c":"OEWJ","ar":"الوجه","en":"Al Wajh Domestic Airport","r":[{"id":"15/33","a":[26.2105007,36.4686012,19.81],"b":[26.1865997,36.4836006,20.12]}]},{"c":"OEYN","ar":"الأمير عبدالمحسن بن عبدالعزيز — ينبع","en":"Prince Abdulmohsen Bin Abdulaziz International Airport","r":[{"id":"10/28","a":[24.1474991,38.0480003,5.49],"b":[24.1408997,38.0788002,7.92]}]}];
-function ll2utm(lat, lon){
+function ll2utm(lat, lon, forceZone){
   const a=6378137, f=1/298.257223563, k0=0.9996;
   const e2=f*(2-f), ep2=e2/(1-e2);
-  const zone=Math.floor((lon+180)/6)+1, lam0=((zone-1)*6-180+3)*Math.PI/180;
+  const zone=forceZone || (Math.floor((lon+180)/6)+1), lam0=((zone-1)*6-180+3)*Math.PI/180;
   const ph=lat*Math.PI/180, lm=lon*Math.PI/180;
   const sn=Math.sin(ph), cs=Math.cos(ph), tn=Math.tan(ph);
   const N=a/Math.sqrt(1-e2*sn*sn), T=tn*tn, C=ep2*cs*cs, A=cs*(lm-lam0);
@@ -489,6 +489,7 @@ function rwyPick(){
   if(!a){ note.textContent=''; return; }
   const rw=a.r[parseInt(document.getElementById('rwySel').value,10)||0];
   const pa=ll2utm(rw.a[0],rw.a[1]), pb=ll2utm(rw.b[0],rw.b[1]);
+  aptZone = pa.zone;
   const sv=(id,v)=>{ document.getElementById(id).value=v; };
   sv('aE',pa.E.toFixed(2)); sv('aN',pa.N.toFixed(2)); sv('aZ', rw.a[2]!=null?rw.a[2].toFixed(2):'');
   sv('bE',pb.E.toFixed(2)); sv('bN',pb.N.toFixed(2)); sv('bZ', rw.b[2]!=null?rw.b[2].toFixed(2):'');
@@ -498,11 +499,94 @@ function rwyPick(){
   if(batchRows) runBatch();
 }
 // ================= batch check =================
-let batchRows = null, batchL = 0, batchSel = -1;
+let batchRows = null, batchL = 0, batchSel = -1, aptZone = 0;
+// geographic line: [id,] latitude, longitude (decimal or D M S with N/S/E/W letters), ground elev [, height]
+function parseGeoLine(line){
+  const toks = line.split(/[\s;,،|()°'":′″]+/).filter(Boolean);
+  const isNum = t => /^[-+]?\d+(?:\.\d+)?$/.test(t);
+  const used = new Array(toks.length).fill(false);
+  let lat=null, lon=null, firstGeo=-1, lastGeo=-1;
+  for (let i=0;i<toks.length;i++){
+    if (used[i]) continue;
+    let m, letter=null, nums=[], lo=i, hi=i;
+    if ((m = toks[i].match(/^([NSEWnsew])([\d.]+)$/))){
+      letter=m[1].toUpperCase(); nums=[parseFloat(m[2])]; used[i]=true;
+      if (!m[2].includes('.')){                      // integer degrees: minutes/seconds may follow
+        let j=i+1;
+        while(nums.length<3 && j<toks.length && isNum(toks[j]) && parseFloat(toks[j])<60){
+          nums.push(parseFloat(toks[j])); used[j]=true; hi=j; j++;
+        }
+      }
+    } else if ((m = toks[i].match(/^([\d.]+)([NSEWnsew])$/))){
+      letter=m[2].toUpperCase(); used[i]=true;
+      const pre=[]; let j=i-1;
+      if (j>=0 && isNum(toks[j]) && !used[j] && parseFloat(toks[j])<60){   // minutes
+        pre.unshift(parseFloat(toks[j])); used[j]=true; lo=j; j--;
+        if (j>=0 && isNum(toks[j]) && !used[j] && parseFloat(toks[j])<=180 && !toks[j].includes('.')){ // degrees
+          pre.unshift(parseFloat(toks[j])); used[j]=true; lo=j;
+        }
+      }
+      nums = pre.concat([parseFloat(m[1])]);
+      if (pre.length===1){ nums=[pre[0]+parseFloat(m[1])/60]; }            // D M.m form
+      else if (pre.length===0){ nums=[parseFloat(m[1])]; }                 // decimal degrees
+      else { nums=[pre[0], pre[1], parseFloat(m[1])]; }
+    } else continue;
+    const val = nums.length===3 ? nums[0]+nums[1]/60+nums[2]/3600
+              : nums.length===2 ? nums[0]+nums[1]/60 : nums[0];
+    const signed = (letter==='S'||letter==='W') ? -val : val;
+    if (letter==='N'||letter==='S'){ if(lat===null) lat=signed; } else { if(lon===null) lon=signed; }
+    if (firstGeo<0 || lo<firstGeo) firstGeo=lo;
+    if (hi>lastGeo) lastGeo=hi;
+  }
+  if (lat===null || lon===null || Math.abs(lat)>90 || Math.abs(lon)>180) return null;
+  const pre=[], post=[];
+  for (let i=0;i<toks.length;i++){
+    if (used[i] || !isNum(toks[i])) continue;
+    const v = parseFloat(toks[i]);
+    if (Math.abs(v) >= 100000) return null;        // projected row with extra text columns: metric parser handles it
+    (i < firstGeo ? pre : post).push(v);
+  }
+  if (!post.length) return null;                   // ground elevation required after the coordinates
+  const H = (post.length >= 2 && post[1] > 0 && post[1] <= 300) ? post[1] : null;
+  return { id: pre.length ? pre[0] : null, lat, lon, Z: post[0], H };
+}
+// one coordinate field holding an angle with a hemisphere letter: "27 25 30.46N", "N27.4584", "E41 41 23.94"
+function parseAngleStr(sraw){
+  if (!/[NSEWnsew]/.test(sraw)) return null;
+  const m = sraw.match(/([NSEWnsew])/); const letter = m[1].toUpperCase();
+  const nums = (sraw.match(/\d+(?:\.\d+)?/g) || []).map(parseFloat);
+  if (!nums.length || nums.length > 3) return null;
+  const val = nums.length===3 ? nums[0]+nums[1]/60+nums[2]/3600
+            : nums.length===2 ? nums[0]+nums[1]/60 : nums[0];
+  const signed = (letter==='S'||letter==='W') ? -val : val;
+  if (Math.abs(signed) > 180) return null;
+  return { val: signed, isLat: (letter==='N'||letter==='S') };
+}
+// resolve one threshold's E/N pair: metric numbers pass through; hemisphere-lettered angles are converted
+function resolveThr(rawE, rawN, forceZone){
+  const gE = parseAngleStr(rawE), gN = parseAngleStr(rawN);
+  if (gE || gN){
+    if (!gE || !gN) return null;
+    const lat = gE.isLat ? gE.val : (gN.isLat ? gN.val : null);
+    const lon = !gE.isLat ? gE.val : (!gN.isLat ? gN.val : null);
+    if (lat===null || lon===null || Math.abs(lat)>90) return null;
+    const u = ll2utm(lat, lon, forceZone || undefined);
+    return { E:u.E, N:u.N, zone:u.zone, geo:true };
+  }
+  const E = parseFloat(rawE), N = parseFloat(rawN);
+  if (!Number.isFinite(E) || !Number.isFinite(N)) return null;
+  return { E, N, zone:0, geo:false };
+}
 function parsePoints(txt){
   const pts = [];
   for (const raw of txt.split(/\r?\n/)){
     const line = raw.trim(); if (!line) continue;
+    const g = parseGeoLine(line);
+    if (g){
+      const u = ll2utm(g.lat, g.lon, aptZone || undefined);
+      pts.push({ id: g.id ?? (pts.length + 1), E: u.E, N: u.N, Z: g.Z, H: g.H });
+      continue;
+    }
     const nums = line.split(/[\s;,،|]+/).map(parseFloat).filter(Number.isFinite);
     if (nums.length < 3) continue;
     let id = null, rest = nums;
@@ -527,8 +611,12 @@ function showBatchMsg(txt, bad){
 function runBatch(){
   const t = T();
   const gv = id => parseFloat(document.getElementById(id).value);
-  const bp = { aE:gv('aE'), aN:gv('aN'), aZ:gv('aZ'), bE:gv('bE'), bN:gv('bN'), bZ:gv('bZ'), H0:gv('bH') };
-  if (![bp.aE,bp.aN,bp.aZ,bp.bE,bp.bN,bp.bZ].every(Number.isFinite)){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
+  const raw = id => document.getElementById(id).value.trim();
+  const ta = resolveThr(raw('aE'), raw('aN'), aptZone || undefined);
+  const tb = ta ? resolveThr(raw('bE'), raw('bN'), ta.zone || aptZone || undefined) : null;
+  if (ta && ta.geo && ta.zone) aptZone = ta.zone;
+  const bp = ta && tb ? { aE:ta.E, aN:ta.N, aZ:gv('aZ'), bE:tb.E, bN:tb.N, bZ:gv('bZ'), H0:gv('bH') } : { aZ:NaN };
+  if (!ta || !tb || ![bp.aE,bp.aN,bp.aZ,bp.bE,bp.bN,bp.bZ].every(Number.isFinite)){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
   const dx = bp.bE-bp.aE, dy = bp.bN-bp.aN, L = Math.hypot(dx,dy);
   if (L < 1){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
   const pts = parsePoints(document.getElementById('bData').value);
