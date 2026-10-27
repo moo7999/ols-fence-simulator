@@ -1193,20 +1193,20 @@ function draw3d(p,e){
     }
   }
   // ---- 5b. approach & take-off climb sheets beyond the thresholds (batch mode) ----
-  if (hasBatch && batchThr){
+  if (hasBatch){
     const k = (z1 - z0)/Math.max(batchL, 1);           // scene units per metre along the runway
-    for (const end of [{ze:z1, dir:1, rel:batchThr.a - p.cl}, {ze:z0, dir:-1, rel:batchThr.b - p.cl}]){
+    for (const end of [{ze:z1, dir:1}, {ze:z0, dir:-1}]){
       const umax = Math.min(1500, (Zt - 14 - Math.abs(end.ze))/k);
       if (umax < APP.dist + 60) continue;
       const seg = (umax - APP.dist)/5;
       for (let i2=0; i2<5; i2++){
         const ua = APP.dist + i2*seg, ub = ua + seg;
-        const ya = end.rel + APP.g1*(ua - APP.dist), yb = end.rel + APP.g1*(ub - APP.dist);
+        const ya = APP.g1*(ua - APP.dist), yb = APP.g1*(ub - APP.dist);
         const ha = APP.inner + APP.div*(ua - APP.dist), hb = APP.inner + APP.div*(ub - APP.dist);
         const za = end.ze + end.dir*ua*k, zb = end.ze + end.dir*ub*k;
         quad([-ha,ya,za],[ha,ya,za],[hb,yb,zb],[-hb,yb,zb], [96,120,126], 0.16, 'rgba(22,69,78,.45)', 1);
       }
-      line([0, end.rel, end.ze + end.dir*APP.dist*k], [0, end.rel + APP.g1*(umax - APP.dist), end.ze + end.dir*umax*k], 'rgba(22,69,78,.35)', 1, [6,5]);
+      line([0, 0, end.ze + end.dir*APP.dist*k], [0, APP.g1*(umax - APP.dist), end.ze + end.dir*umax*k], 'rgba(22,69,78,.35)', 1, [6,5]);
     }
   }
   // penetration slice above the surface
@@ -1239,7 +1239,7 @@ function draw3d(p,e){
       const k2 = (z1 - z0)/Math.max(batchL, 1);
       const um = Math.min(1500, (Zt - 14 - Math.abs(z1))/k2);
       if (um > APP.dist + 60)
-        label(t.b_endSurf, P3(0, (batchThr.a - p.cl) + APP.g1*(um*0.55 - APP.dist) + 2, z1 + um*0.55*k2), '#16454E', -6);
+        label(t.b_endSurf, P3(0, APP.g1*(um*0.55 - APP.dist) + 2, z1 + um*0.55*k2), '#16454E', -6);
     }
     for(let i=0;i<batchRows.length;i++){
       const r=batchRows[i], sel=(i===batchSel);
