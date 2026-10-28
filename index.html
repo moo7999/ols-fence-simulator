@@ -862,12 +862,13 @@ function draw2d(p,e){
   const X = m => rtl ? x1-(m/xmax)*(x1-x0) : x0+(m/xmax)*(x1-x0);
   const yB=Hc-55, yT=25;
   const Y = el => yB-((el-ymin)/(ymax-ymin))*(yB-yT);
-  // ground profile: 0 at runway, ramp 45..75 to relG, flat beyond
+  const rEnd = Math.max(75, Math.min(Math.abs(p.d) - 20, 420));
+  // ground profile: 0 at runway, ramp 45..rEnd to relG, flat beyond
   ctx.fillStyle=C.sand; ctx.beginPath();
-  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(75),Y(relG)); ctx.lineTo(X(xmax),Y(relG));
+  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(rEnd),Y(relG)); ctx.lineTo(X(xmax),Y(relG));
   ctx.lineTo(X(xmax),yB); ctx.lineTo(X(0),yB); ctx.closePath(); ctx.fill();
   ctx.strokeStyle=C.sandEdge; ctx.lineWidth=2; ctx.beginPath();
-  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(75),Y(relG)); ctx.lineTo(X(xmax),Y(relG)); ctx.stroke();
+  ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(45),Y(0)); ctx.lineTo(X(rEnd),Y(relG)); ctx.lineTo(X(xmax),Y(relG)); ctx.stroke();
   // runway
   ctx.fillStyle=C.rwy; const xr0=X(0), xr1=X(23);
   ctx.fillRect(Math.min(xr0,xr1), Y(0)-4, Math.abs(xr1-xr0), 6);
@@ -945,7 +946,8 @@ function draw3d(p,e){
   const Zt = 470;          // terrain length
   const Xf = 300;          // terrain side extension
   const cx = xmax*0.45, cy2=(relG+p.H)*YEX*0.4, cz=0;
-  const groundAt = x => { const a=Math.abs(x); return a<=45?0 : a>=75?relG : relG*(a-45)/30; };
+  const rampEnd = Math.max(75, Math.min(Math.abs(p.d) - 20, 420));
+  const groundAt = x => { const a=Math.abs(x); return a<=45?0 : a>=rampEnd?relG : relG*(a-45)/(rampEnd-45); };
   const eyeY = groundAt(cam.wx)*YEX + 1.7*YEX;
 
   // sky
@@ -1052,7 +1054,7 @@ function draw3d(p,e){
   const STEP=47;
   // symmetric ground: runway bench at datum, terrain on BOTH sides at the object's ground elevation —
   // one plane to the horizon, no one-sided cliff
-  const cols=[[-40-Xf,-75,relG,relG],[-75,-45,relG,0],[-45,45,0,0],[45,75,0,relG],[75,xmax,relG,relG],[xmax,xmax+Xf,relG,relG]];
+  const cols=[[-40-Xf,-rampEnd,relG,relG],[-rampEnd,-45,relG,0],[-45,45,0,0],[45,rampEnd,0,relG],[rampEnd,xmax,relG,relG],[xmax,xmax+Xf,relG,relG]];
   for(let z=-Zt; z<Zt; z+=STEP){
     const even = (Math.round(z/STEP)%2===0);
     const sand = even ? [227,212,175] : [221,205,166];
