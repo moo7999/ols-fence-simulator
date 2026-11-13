@@ -9,13 +9,13 @@
 <meta property="og:title" content="OLS Fence Simulator — محاكي أسطح تحديد العوائق">
 <meta property="og:description" content="Instant ICAO Annex 14 compliance check for fences and objects near runways — bilingual AR/EN, interactive 3D walk mode, offline, open source (MIT).">
 <meta property="og:url" content="https://ols-fence-simulator.netlify.app/">
-<meta property="og:image" content="https://ols-fence-simulator.netlify.app/docs/social.png">
+<meta property="og:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=7">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="OLS Fence Simulator — محاكي أسطح تحديد العوائق">
 <meta name="twitter:description" content="Instant ICAO Annex 14 compliance check for fences and objects near runways — bilingual, 3D, offline, open source.">
-<meta name="twitter:image" content="https://ols-fence-simulator.netlify.app/docs/social.png">
+<meta name="twitter:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=7">
 <title>OLS Fence Simulator</title>
 <style>
   :root { --teal:#1F9AA0; --dark:#16454E;
@@ -109,8 +109,8 @@
       <div class="ctl">
         <label id="l_strip"></label>
         <select id="strip">
-          <option value="140">140</option>
-          <option value="150" selected>150</option>
+          <option value="140" selected>140</option>
+          <option value="150">150</option>
           <option value="75">75</option>
           <option value="70">70</option>
           <option value="40">40</option>
@@ -231,6 +231,14 @@
           <input type="number" id="bH" step="0.1" min="0" max="300" value="2.5">
           <div class="hint" id="b_h_hdef"></div>
         </div>
+        <div class="ctl">
+          <label id="b_l_shape"></label>
+          <select id="bShape" onchange="update()">
+            <option value="fence" selected id="b_shape_fence"></option>
+            <option value="eq" id="b_shape_eq"></option>
+          </select>
+          <div class="hint" id="b_h_shape"></div>
+        </div>
       </div>
       <div class="ctl" style="margin-top:12px; min-width:0">
         <label id="b_l_data"></label>
@@ -303,6 +311,8 @@ const I = {
   b_l_thrA:'العتبة الأولى: شرقية، شمالية، منسوب (م)', b_l_thrB:'العتبة الثانية: شرقية، شمالية، منسوب (م)',
   b_h_thrA:'متري مسقط، أو جغرافي بأحرف الجهات كما في النشرة — مثل 41 41 14.54E في خانة الشرقية و27 27 16.79N في الشمالية — ويُحول تلقائياً', b_h_thrB:'يُفترض منسوب المحور خطياً بين العتبتين',
   b_l_hdef:'ارتفاع الجسم الافتراضي (م)', b_h_hdef:'يُستخدم لأي نقطة بلا عمود ارتفاع خامس',
+  b_l_shape:'شكل النقاط في المشهد', b_shape_fence:'سور شبكي', b_shape_eq:'معدات عمل',
+  b_h_shape:'المعدات تُرسم رمزياً بأقصى ارتفاع كل نقطة، وواحدة تتحرك على المسار — الحكم من الأرقام لا من الرسم',
   b_l_data:'النقاط: رقم، شرقية، شمالية، منسوب الأرض، ارتفاع اختياري',
   b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف. وتُقبل الإحداثيات الجغرافية كما في خطابات الهيئة — عشرية أو درجات ودقائق وثوان بأحرف الجهات، خط العرض ثم الطول ثم منسوب الأرض فارتفاع اختياري — وتُحول تلقائياً على نطاق المطار المختار',
   b_file:'إرفاق ملف…', b_run:'افحص النقاط', b_sample:'مثال جاهز', b_csv:'تنزيل النتائج',
@@ -363,6 +373,8 @@ const I = {
   b_l_thrA:'Threshold A: easting, northing, elevation (m)', b_l_thrB:'Threshold B: easting, northing, elevation (m)',
   b_h_thrA:'Projected metres, or geographic with hemisphere letters as in the AIP — e.g. 41 41 14.54E in the easting box and 27 27 16.79N in the northing box — converted automatically', b_h_thrB:'Centreline elevation is interpolated linearly between thresholds',
   b_l_hdef:'Default object height (m)', b_h_hdef:'Used for any point without a fifth height column',
+  b_l_shape:'Point shape in the scene', b_shape_fence:'Mesh fence', b_shape_eq:'Work equipment',
+  b_h_shape:'Machines are drawn symbolically at each point’s declared height, one drives the path — the verdict comes from the numbers, not the drawing',
   b_l_data:'Points: id, easting, northing, ground elevation, optional height',
   b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators. Geographic coordinates as written in authority letters are accepted too — decimal or D-M-S with hemisphere letters, latitude then longitude then ground elevation and optional height — converted automatically in the selected airport\u2019s zone',
   b_file:'Attach file…', b_run:'Check points', b_sample:'Load sample', b_csv:'Download results',
@@ -401,7 +413,7 @@ function applyLang(){
   set('tab3d', t.tab3d); set('tab2d', t.tab2d);
   set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
   ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
-   'b_file','b_run','b_sample','b_click'].forEach(k=> set(k, t[k]));
+   'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_h_shape'].forEach(k=> set(k, t[k]));
   syncThrLabels();
   set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear);
   set('b_l_apt', t.b_l_apt); set('b_l_rwy', t.b_l_rwy); set('b_h_apt', t.b_h_apt);
@@ -1082,6 +1094,50 @@ function draw3d(p,e){
     const zOf = s => Math.max(-(Zt-14), Math.min(Zt-14, z1 - (s/Math.max(batchL,1))*(z1-z0)));
     const BP = batchRows.map(r=>({ x:Math.min(r.d, 540), z: zOf(r.s),
       y0:r.relg, y1:r.relg + r.H, bad:(r.e.inside || r.e.pen>0), out:r.nocov }));
+    const eqMode = document.getElementById('bShape').value === 'eq';
+    // a wheel-loader symbol: body, cab, raised boom whose tip marks the point's declared max height,
+    // with a dashed plumb line from the tip to the ground — the compliance height is the tip, the body is illustrative
+    function machine(cx2, baseY, cz2, H2, ang, bad, lit){
+      const ca=Math.cos(ang), sa=Math.sin(ang);
+      const P2=(u,v,y)=>[cx2 + u*ca - v*sa, baseY + y, cz2 + u*sa + v*ca];
+      const Lb=13, Wd=4.5, body=[203,164,52], dark=[64,60,50];
+      const yB0=H2*0.18, yB1=H2*0.52, yC1=H2*0.80;
+      for (const uu of [-Lb*0.32, Lb*0.32]){
+        quad(P2(uu-2,-Wd/2,0),P2(uu+2,-Wd/2,0),P2(uu+2,-Wd/2,yB0+H2*0.08),P2(uu-2,-Wd/2,yB0+H2*0.08), dark, .95);
+        quad(P2(uu-2, Wd/2,0),P2(uu+2, Wd/2,0),P2(uu+2, Wd/2,yB0+H2*0.08),P2(uu-2, Wd/2,yB0+H2*0.08), dark, .95);
+      }
+      quad(P2(-Lb/2,-Wd/2,yB0),P2(Lb/2,-Wd/2,yB0),P2(Lb/2,-Wd/2,yB1),P2(-Lb/2,-Wd/2,yB1), body,.9);
+      quad(P2(-Lb/2, Wd/2,yB0),P2(Lb/2, Wd/2,yB0),P2(Lb/2, Wd/2,yB1),P2(-Lb/2, Wd/2,yB1), body,.72);
+      quad(P2(-Lb/2,-Wd/2,yB1),P2(Lb/2,-Wd/2,yB1),P2(Lb/2,Wd/2,yB1),P2(-Lb/2,Wd/2,yB1), body,.96);
+      quad(P2(-Lb*0.42,-Wd*0.38,yB1),P2(-Lb*0.05,-Wd*0.38,yB1),P2(-Lb*0.05,-Wd*0.38,yC1),P2(-Lb*0.42,-Wd*0.38,yC1), body,.84);
+      quad(P2(-Lb*0.42, Wd*0.38,yB1),P2(-Lb*0.05, Wd*0.38,yB1),P2(-Lb*0.05, Wd*0.38,yC1),P2(-Lb*0.42, Wd*0.38,yC1), body,.66);
+      quad(P2(-Lb*0.42,-Wd*0.38,yC1),P2(-Lb*0.05,-Wd*0.38,yC1),P2(-Lb*0.05,Wd*0.38,yC1),P2(-Lb*0.42,Wd*0.38,yC1), [228,236,238],.92);
+      line(P2(Lb*0.1,0,yB1), P2(Lb*0.62,0,H2), 'rgba(118,94,30,.95)', lit?3.2:2.2);
+      quad(P2(Lb*0.5,-Wd*0.45,H2),P2(Lb*0.8,-Wd*0.45,H2*0.84),P2(Lb*0.8,Wd*0.45,H2*0.84),P2(Lb*0.5,Wd*0.45,H2), dark,.9);
+      const vc = bad ? 'rgba(125,38,41,.95)' : 'rgba(30,96,60,.95)';
+      line(P2(Lb*0.62,0,H2), P2(Lb*0.62,0,0), vc, lit?2:1.2, [3,3]);
+    }
+    if (eqMode){
+      for(let i=0;i<BP.length-1;i++){
+        const a=BP[i], b=BP[i+1];
+        line([a.x,a.y0+0.05,a.z],[b.x,b.y0+0.05,b.z], 'rgba(96,88,62,.8)', 1.6, [7,6]);
+      }
+      for(let i=0;i<BP.length;i++){
+        const b=BP[i], r=batchRows[i];
+        const nb=BP[Math.min(i+1,BP.length-1)], pb=BP[Math.max(i-1,0)];
+        machine(b.x, b.y0, b.z, r.H, Math.atan2(nb.z-pb.z, nb.x-pb.x), b.bad, i===batchSel);
+      }
+      // one machine drives the whole path, holding each stretch's declared height
+      const segs=[]; let tot=0;
+      for(let i=0;i<BP.length-1;i++){ const a=BP[i],b=BP[i+1]; const l=Math.hypot(b.x-a.x,b.z-a.z); segs.push(l); tot+=l; }
+      if (tot > 1){
+        let dcur = ((performance.now()-ANIM0)/1000 * 14) % tot, i2=0;
+        while (dcur > segs[i2] && i2 < segs.length-1){ dcur -= segs[i2]; i2++; }
+        const a=BP[i2], b=BP[i2+1], u2=dcur/Math.max(segs[i2],0.01);
+        machine(a.x+(b.x-a.x)*u2, a.y0+(b.y0-a.y0)*u2, a.z+(b.z-a.z)*u2,
+          batchRows[i2].H, Math.atan2(b.z-a.z, b.x-a.x), a.bad||b.bad, true);
+      }
+    } else {
     for(let i=0;i<BP.length-1;i++){
       const a=BP[i], b=BP[i+1], bad=a.bad||b.bad;
       const col = bad ? [178,56,59] : [46,139,87];
@@ -1096,6 +1152,7 @@ function draw3d(p,e){
       const b=BP[i], r=batchRows[i], sel=(i===batchSel);
       const pc = b.bad ? 'rgba(125,38,41,.98)' : (b.out ? 'rgba(169,122,23,.98)' : 'rgba(30,96,60,.98)');
       line([b.x,b.y0,b.z],[b.x,b.y1,b.z], pc, sel?5:3);
+    }
     }
   } else {
   const shW = Math.min(14, p.H*2.2);
