@@ -953,7 +953,8 @@ function draw2d(p,e){
 
 // ================= 3D =================
 // per-airport ground layout — stations in metres from THR A along the runway, cross-track x (+ = the surfaces side, − = opposite).
-// Navaids and stopways are taken from the AIP AD 2 entry; taxiway/apron/buildings are SCHEMATIC until survey data lands.
+// Navaids and stopways are taken from the AIP AD 2 entry; taxiway, connectors and apron frontage come from the KMZ survey file.
+// Still SCHEMATIC: the terminal building shape and the apron's eastern depth.
 const APT_LAYOUT = {
   OEHL: { L:3300,
     swy: [[-60,0],[3300,3720]],
