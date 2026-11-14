@@ -77,6 +77,8 @@
   .cell-ok { color:var(--good-fg); font-weight:700; }
   .cell-bad { color:var(--bad-fg); font-weight:700; }
   .cell-warn { color:var(--warn-fg,#a97a17); font-weight:700; }
+  .cell-inv { color:#a3402f; font-weight:700; }
+  .verdict.warn { background:rgba(169,122,23,.12); color:var(--warn-fg,#a97a17); }
   :root[data-theme="dark"] { --warn-fg:#e3b65a; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn-fg:#e3b65a; } }
   .trio { display:flex; gap:6px; min-width:0; }
@@ -144,6 +146,7 @@
           <option value="fence" id="opt_f" selected></option>
           <option value="crane" id="opt_cr"></option>
         </select>
+        <div class="hint" id="h_hcap"></div>
       </div>
     </div>
     <div class="grid" style="margin-top:12px">
@@ -298,7 +301,12 @@ const I = {
   sfT:'السطح الانتقالي', sfIH:'السطح الأفقي الداخلي', sfCon:'السطح المخروطي', gov:'السطح الحاكم',
   sfApp:'سطح الاقتراب', sfToc:'سطح تسلق الإقلاع', b_endSurf:'سطحا الاقتراب والإقلاع',
   thrLbl:'عتبة', thrA:'العتبة أ', thrB:'العتبة ب',
-  b_nocov:'⚠ خارج نطاق التغطية',
+  b_nocov:'⚠ خارج نطاق الأسطح المحسوبة — ليست مطابقة',
+  b_inv:'غير صالحة', b_suminv:'{inv} غير صالحة (مستبعدة من الفحص)',
+  inv_fields:'عدد الحقول غير صحيح', inv_coord:'صيغة إحداثية غير معروفة',
+  inv_mix:'خلط بين المتري والجغرافي', inv_range:'قيمة خارج النطاق الجغرافي الممكن',
+  inv_z:'منسوب أرض غير صالح', inv_h:'ارتفاع غير صالح — رقم من 0 إلى 300 مطلوب',
+  h_hcap:'حد 30 م هو سقف شريط التمرير لا سقف الأسطح — للارتفاعات الأعلى استخدم الفحص الجماعي (حتى 300 م)',
   note_bey:'النقطة خلف العتبة — حكمها من {s}، والمقطع العرضي الجانبي لا ينطبق عليها',
   warn_gap:'فرق المنسوب بين الأرض والمحور يتجاوز 200 م — غالباً خطأ إدخال أو لصق، تحقق من الخانتين',
   opt_f:'سور شبكي', opt_cr:'رافعة برجية', craneLbl:'الرافعة',
@@ -321,7 +329,7 @@ const I = {
   b_c1:'نقطة', b_c2:'المسافة عن المحور', b_c3:'المحطة', b_c4:'منسوب المحور', b_c5:'السطح الحاكم',
   b_c6:'المنسوب المسموح', b_c7:'قمة الجسم', b_c8:'الهامش', b_c9:'الحكم',
   b_ok:'✓ مطابق', b_pen:'✗ يخترق', b_in:'✗ داخل الشريط', b_out:'⚠ خارج العتبتين',
-  b_sum:'{n} نقطة: {ok} مطابقة · {pen} مخترقة · {ins} داخل الشريط · {out} خارج نطاق التغطية',
+  b_sum:'{n} نقطة: {ok} مطابقة · {pen} مخترقة · {ins} داخل الشريط · {out} خارج نطاق الأسطح المحسوبة',
   b_err_cl:'أكمل إحداثيات العتبتين الست أولاً', b_err_pts:'ما أمكن قراءة أي نقطة — تأكد أن كل سطر يحوي شرقية وشمالية ومنسوباً',
   b_err_xlsx:'تعذرت قراءة الملف في هذا المتصفح — احفظه بصيغة نصية مفصولة بفواصل أو انسخ الخلايا والصقها مباشرة',
   b_err_type:'المدعوم: إكسل ووورد والملفات النصية — البي دي إف والصور لا تُقرأ جداولها بموثوقية، انسخ الجدول من المستند والصقه في المربع',
@@ -361,7 +369,12 @@ const I = {
   sfT:'transitional surface', sfIH:'inner horizontal surface', sfCon:'conical surface', gov:'Governing surface',
   sfApp:'approach surface', sfToc:'take-off climb surface', b_endSurf:'approach & take-off climb surfaces',
   thrLbl:'THR', thrA:'THR A', thrB:'THR B',
-  b_nocov:'⚠ Outside coverage',
+  b_nocov:'⚠ Outside the modelled surfaces — not a clearance',
+  b_inv:'Invalid', b_suminv:'{inv} invalid (excluded from the check)',
+  inv_fields:'wrong number of fields', inv_coord:'unrecognized coordinate format',
+  inv_mix:'metric mixed with geographic', inv_range:'value outside the possible geographic range',
+  inv_z:'invalid ground elevation', inv_h:'invalid height — a number from 0 to 300 is required',
+  h_hcap:'30 m is the slider cap, not a surface limit — use the batch check for taller objects (up to 300 m)',
   note_bey:'Point lies beyond the threshold — its verdict comes from the {s}; the lateral cross-section does not apply to it',
   warn_gap:'Ground and centreline elevations differ by more than 200 m — most likely a typo or paste slip, check both fields',
   opt_f:'Mesh fence', opt_cr:'Tower crane', craneLbl:'Crane',
@@ -384,7 +397,7 @@ const I = {
   b_c1:'Point', b_c2:'Distance from CL', b_c3:'Station', b_c4:'CL elevation', b_c5:'Governing surface',
   b_c6:'Max allowed', b_c7:'Object top', b_c8:'Margin', b_c9:'Verdict',
   b_ok:'✓ Compliant', b_pen:'✗ Penetrates', b_in:'✗ Inside strip', b_out:'⚠ Beyond thresholds',
-  b_sum:'{n} points: {ok} compliant · {pen} penetrating · {ins} inside strip · {out} outside coverage',
+  b_sum:'{n} points: {ok} compliant · {pen} penetrating · {ins} inside strip · {out} outside modelled surfaces',
   b_err_cl:'Fill in all six threshold coordinates first', b_err_pts:'No points could be read — make sure every line has an easting, a northing, and an elevation',
   b_err_xlsx:'Could not read this file in this browser — save it as CSV or copy the cells and paste them directly',
   b_err_type:'Supported: Excel, Word and text files — PDF and image tables cannot be read reliably; copy the table from the document and paste it in the box',
@@ -418,7 +431,7 @@ function applyLang(){
   ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
    'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_h_shape'].forEach(k=> set(k, t[k]));
   syncThrLabels();
-  set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear);
+  set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear); set('h_hcap', t.h_hcap);
   set('b_l_apt', t.b_l_apt); set('b_l_rwy', t.b_l_rwy); set('b_h_apt', t.b_h_apt);
   fillAptOptions();
   renderBatch();
@@ -438,19 +451,28 @@ function params(){
   const ihH = parseFloat(document.getElementById('ihh').value) || 45;
   const ihEnd = parseFloat(document.getElementById('ihe').value) || 4000;
   const otype = document.getElementById('otype').value;
-  return {cl,g,strip,slope,d,H, top:g+H, ihH, ihEnd, conS:20, conRise:100, otype};
+  // Inner-horizontal datum — GACAR Part 139 Appendix G (c)(7): the IH is ONE horizontal plane,
+  // 45 m above the elevation of the LOWEST runway threshold. When both threshold elevations are
+  // known they fix the plane; otherwise the entered centreline elevation is the only datum available.
+  const aZv = parseFloat(document.getElementById('aZ').value);
+  const bZv = parseFloat(document.getElementById('bZ').value);
+  const ihZ = (Number.isFinite(aZv) && Number.isFinite(bZv)) ? Math.min(aZv, bZv) + ihH : cl + ihH;
+  return {cl,g,strip,slope,d,H, top:g+H, ihH, ihZ, ihEnd, conS:20, conRise:100, otype};
 }
-// lateral OLS profile: transitional (1:slope) capped by the inner horizontal (ihH),
-// then conical at 5% (1:20) from ihEnd rising conRise metres
+// lateral OLS profile: transitional (1:slope) capped by the single inner-horizontal plane (ihZ),
+// then conical at 5% (1:20) from ihEnd rising conRise metres above that plane. ir is the IH
+// plane's height relative to the local centreline elevation.
 function surfParts(p){
-  return { tEnd: p.strip + p.slope*p.ihH, ihEnd: p.ihEnd, conTop: p.ihH + p.conRise,
+  const ir = p.ihZ - p.cl;
+  return { ir, tEnd: p.strip + p.slope*Math.max(ir, 0), ihEnd: p.ihEnd, conTop: ir + p.conRise,
            conEnd: p.ihEnd + p.conS*p.conRise };
 }
 function allowRelAt(p, d){            // allowed height above CL reference at lateral distance d
   if (d < p.strip) return NaN;
   const sp = surfParts(p);
-  let h = Math.min((d - p.strip)/p.slope, p.ihH);
-  if (d > sp.ihEnd) h = Math.min(p.ihH + (d - sp.ihEnd)/p.conS, sp.conTop);
+  if (d > sp.conEnd + 0.01) return NaN;   // beyond the conical outer edge (1 cm survey tolerance): no modelled surface governs
+  let h = Math.min((d - p.strip)/p.slope, sp.ir);
+  if (d > sp.ihEnd) h = Math.min(sp.ir + (d - sp.ihEnd)/p.conS, sp.conTop);
   return h;
 }
 function surfNameAt(p, d, t){
@@ -461,16 +483,18 @@ function surfNameAt(p, d, t){
 }
 function evaluate(p){
   const inside = p.d < p.strip;
-  const allow = inside ? NaN : p.cl + allowRelAt(p, p.d);
-  const pen = inside ? Infinity : p.top - allow;
+  const rel = inside ? NaN : allowRelAt(p, p.d);
+  const ncov = !inside && !Number.isFinite(rel);
+  const allow = (inside || ncov) ? NaN : p.cl + rel;
+  const pen = inside ? Infinity : (ncov ? NaN : p.top - allow);
   const sp = surfParts(p);
   const relTop = p.top - p.cl;
   let dmin;
   if (relTop <= 0) dmin = p.strip;
-  else if (relTop <= p.ihH) dmin = p.strip + p.slope*relTop;
-  else if (relTop <= sp.conTop) dmin = sp.ihEnd + p.conS*(relTop - p.ihH);
+  else if (relTop <= sp.ir) dmin = p.strip + p.slope*relTop;
+  else if (relTop <= sp.conTop) dmin = sp.ihEnd + p.conS*(relTop - sp.ir);
   else dmin = Infinity;
-  return {inside, allow, pen, dmin};
+  return {inside, ncov, allow, pen, dmin};
 }
 // ====== surfaces beyond the thresholds — Annex 14 Vol I Tables 4-1 & 4-2, instrument runways code 3/4 ======
 // Approach (precision CAT I / non-precision): inner edge 280 m at 60 m from THR, 15% divergence,
@@ -479,9 +503,10 @@ function evaluate(p){
 const APP = { inner:140, dist:60, div:0.15, s1:3000, g1:0.02, s2:3600, g2:0.025, cap:150, total:15000 };
 const TOC = { inner:90,  dist:60, div:0.125, half:600, g:0.02, total:15000 };
 // x: metres beyond the threshold along the extended centreline; dAbs: lateral offset from it;
-// thrZ: that end's threshold elevation. The approach datum is the THR elevation, and the take-off
-// climb datum is approximated by the same elevation (clearway NIL). Inner horizontal and conical
-// wrap the end radially from the threshold point. Returns the lowest covering surface, or null.
+// thrZ: that end's threshold elevation — the datum for approach and take-off climb only (Annex 14
+// 4.1.9). The inner horizontal and conical use the single aerodrome-wide plane p.ihZ, which is
+// 45 m above the LOWEST threshold per GACAR Part 139 Appendix G (c)(7); they wrap the end
+// radially from the threshold point. Returns the lowest covering surface, or null.
 function beyondAllowed(p, x, dAbs, thrZ){
   const cands = [], u = x - APP.dist;
   if (u >= 0 && u <= APP.total){
@@ -490,14 +515,15 @@ function beyondAllowed(p, x, dAbs, thrZ){
     if (dAbs <= halfA) cands.push([zApp, 'sfApp']);
     else {
       const zTr = zApp + (dAbs - halfA)/p.slope;      // transitional flank of the approach surface
-      if (zTr < thrZ + p.ihH) cands.push([zTr, 'sfT']);
+      if (zTr < p.ihZ) cands.push([zTr, 'sfT']);
     }
     const halfT = Math.min(TOC.inner + TOC.div*u, TOC.half);
     if (dAbs <= halfT) cands.push([thrZ + TOC.g*u, 'sfToc']);
   }
   const r = Math.hypot(x, dAbs);                       // racetrack arcs about the threshold
-  if (r <= p.ihEnd) cands.push([thrZ + p.ihH, 'sfIH']);
-  else if (r <= p.ihEnd + p.conS*p.conRise) cands.push([thrZ + p.ihH + (r - p.ihEnd)/p.conS, 'sfCon']);
+  // IH and conical use the single aerodrome-wide datum plane (p.ihZ), not this end's threshold
+  if (r <= p.ihEnd) cands.push([p.ihZ, 'sfIH']);
+  else if (r <= p.ihEnd + p.conS*p.conRise) cands.push([p.ihZ + (r - p.ihEnd)/p.conS, 'sfCon']);
   if (!cands.length) return null;
   cands.sort((a,b)=>a[0]-b[0]);
   return { allow: cands[0][0], sf: cands[0][1] };
@@ -561,7 +587,8 @@ function rwyPick(){
   if(batchRows) runBatch(); else update();
 }
 // ================= batch check =================
-let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null, batchU = null;
+let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null, batchU = null, batchBad = [];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let preBatch = null;   // the single-point inputs as the user left them, before the batch auto-loaded a row
 // show each threshold's runway designator next to its input box, in the scene and on the plan inset
 function thrName(which){
@@ -653,28 +680,74 @@ function resolveThr(rawE, rawN, forceZone){
   if (!Number.isFinite(E) || !Number.isFinite(N)) return null;
   return { E, N, zone:0, geo:false };
 }
-function parsePoints(txt){
-  const pts = [];
-  for (const raw of txt.split(/\r?\n/)){
-    const line = raw.trim(); if (!line) continue;
-    const g = parseGeoLine(line);
-    if (g){
-      const u = ll2utm(g.lat, g.lon, aptZone || undefined);
-      pts.push({ id: g.id ?? (pts.length + 1), E: u.E, N: u.N, Z: g.Z, H: g.H });
-      continue;
-    }
-    const nums = line.split(/[\s;,،|]+/).map(parseFloat).filter(Number.isFinite);
-    if (nums.length < 3) continue;
-    let id = null, rest = nums;
-    if (nums.length >= 4 && Number.isInteger(nums[0]) && Math.abs(nums[0]) < 10000 && Math.abs(nums[1]) >= 1000){
-      id = nums[0]; rest = nums.slice(1);
-    }
-    if (rest.length < 3) continue;
-    const [E, N, Z] = rest;
-    const H = (rest.length === 4 && rest[3] > 0 && rest[3] <= 300) ? rest[3] : null;
-    pts.push({ id: id ?? (pts.length + 1), E, N, Z, H });
+// ---- strict input layer: a line either parses completely or is rejected with a reason ----
+// One coordinate field, taken WHOLE: a plain projected metre value, or an angle with ONE
+// hemisphere letter (leading or trailing) in D, D M or D M S form, symbols optional.
+function parseField(sraw){
+  const s = sraw.trim();
+  if (!s) return { bad:'inv_fields' };
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(s)) return { num: parseFloat(s) };
+  const m = s.match(/^([NSEWnsew])?\s*([\d°º'′"″\.\s]+?)\s*([NSEWnsew])?$/);
+  if (!m || (!m[1] && !m[3]) || (m[1] && m[3])) return { bad:'inv_coord' };
+  const letter = (m[1]||m[3]).toUpperCase();
+  const nums = (m[2].match(/\d+(?:\.\d+)?/g) || []).map(parseFloat);
+  if (!nums.length || nums.length > 3) return { bad:'inv_coord' };
+  if ((nums.length >= 2 && nums[1] >= 60) || (nums.length === 3 && nums[2] >= 60)) return { bad:'inv_coord' };
+  const val = nums[0] + (nums[1]||0)/60 + (nums[2]||0)/3600;
+  const isLat = (letter==='N' || letter==='S');
+  if (val > (isLat ? 90 : 180)) return { bad:'inv_range' };
+  return { geo: (letter==='S'||letter==='W') ? -val : val, isLat };
+}
+const NUM_RE = /^[+-]?\d+(?:\.\d+)?$/;
+// Interpret one tokenized line as [c1,c2,Z] or [c1,c2,Z,H]; returns a point or {bad:reason}
+function tryPoint(rest, id){
+  const f1 = parseField(rest[0]), f2 = parseField(rest[1]);
+  if (f1.bad || f2.bad) return { bad: f1.bad || f2.bad };
+  let E, N;
+  if ('num' in f1 && 'num' in f2){
+    if (Math.abs(f1.num) < 1000 || Math.abs(f2.num) < 1000) return { bad:'inv_mix' };  // too small for projected metres
+    E = f1.num; N = f2.num;
+  } else if ('geo' in f1 && 'geo' in f2){
+    if (f1.isLat === f2.isLat) return { bad:'inv_coord' };
+    const lat = f1.isLat ? f1.geo : f2.geo, lon = f1.isLat ? f2.geo : f1.geo;
+    const u = ll2utm(lat, lon, aptZone || undefined);
+    E = u.E; N = u.N;
+  } else return { bad:'inv_mix' };                                                     // metric mixed with geographic
+  if (!NUM_RE.test(rest[2])) return { bad:'inv_z' };
+  const Z = parseFloat(rest[2]);
+  if (Math.abs(Z) > 9000) return { bad:'inv_z' };
+  let H = null;
+  if (rest.length === 4){
+    if (!NUM_RE.test(rest[3])) return { bad:'inv_h' };                                 // never silently substitute the default
+    H = parseFloat(rest[3]);
+    if (H < 0 || H > 300) return { bad:'inv_h' };
   }
-  return pts;
+  return { id, E, N, Z, H };
+}
+function parsePoints(txt){
+  const pts = [], bad = [];
+  let ln = 0;
+  for (const raw of txt.split(/\r?\n/)){
+    ln++;
+    const line = raw.trim(); if (!line) continue;
+    let fields = (line.includes(',') || line.includes('،'))
+      ? line.split(/[,،]/).map(f=>f.trim())
+      : line.split(/[\s;|]+/);
+    while (fields.length && fields[fields.length-1]==='') fields.pop();
+    const rej = (id, r) => bad.push({ ln, id: String(id ?? ('#'+ln)), reason: r, raw: line });
+    if (fields.some(f=>f==='') || fields.length < 3 || fields.length > 5){ rej(fields[0], 'inv_fields'); continue; }
+    let got = null;
+    if (fields.length === 5) got = tryPoint(fields.slice(1), fields[0]);
+    else if (fields.length === 3) got = tryPoint(fields, null);
+    else { // 4 fields: an id plus a 3-field point, or an id-less 4-field point — try in that order
+      const idLike = !NUM_RE.test(fields[0]) || (Number.isInteger(parseFloat(fields[0])) && Math.abs(parseFloat(fields[0])) < 100000 && !fields[0].includes('.'));
+      got = idLike ? tryPoint(fields.slice(1), fields[0]) : { bad:'try2' };
+      if (got.bad) { const g2 = tryPoint(fields, null); if (!g2.bad || got.bad==='try2') got = g2; }
+    }
+    if (got.bad){ rej(fields.length >= 4 ? fields[0] : null, got.bad); continue; }
+    pts.push({ id: got.id ?? String(pts.length + 1), E: got.E, N: got.N, Z: got.Z, H: got.H });
+  }
+  return { pts, bad };
 }
 function showBatchMsg(txt, bad){
   const m = document.getElementById('bSummary');
@@ -695,8 +768,11 @@ function runBatch(){
   if (!ta || !tb || ![bp.aE,bp.aN,bp.aZ,bp.bE,bp.bN,bp.bZ].every(Number.isFinite)){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
   const dx = bp.bE-bp.aE, dy = bp.bN-bp.aN, L = Math.hypot(dx,dy);
   if (L < 1){ batchRows=null; showBatchMsg(t.b_err_cl, true); return; }
-  const pts = parsePoints(document.getElementById('bData').value);
-  if (!pts.length){ batchRows=null; showBatchMsg(t.b_err_pts, true); return; }
+  const parsed = parsePoints(document.getElementById('bData').value);
+  const pts = parsed.pts;
+  batchBad = parsed.bad;
+  if (!pts.length && !batchBad.length){ batchRows=null; showBatchMsg(t.b_err_pts, true); return; }
+  if (!pts.length){ batchRows=[]; batchL=L; batchSel=-1; batchThr={a:bp.aZ,b:bp.bZ}; renderBatch(); update(); return; }
   if (!preBatch){
     const v = id => document.getElementById(id).value;
     preBatch = { cl:v('cl'), g:v('g'), dn:v('distNum'), ds:v('dist'), h:v('hgt') };
@@ -717,7 +793,7 @@ function runBatch(){
       const bey = beyondAllowed(q, x, d, s < 0 ? bp.aZ : bp.bZ);
       if (bey){ e = { inside:false, allow:bey.allow, pen:q.top - bey.allow, dmin:NaN }; sf = bey.sf; }
       else { e = { inside:false, allow:NaN, pen:NaN, dmin:NaN }; nocov = true; }
-    } else e = evaluate(q);                   // between thresholds, or within the 60 m strip extension
+    } else { e = evaluate(q); if (e.ncov) nocov = true; }   // between thresholds, or within the 60 m strip extension
     return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e, sf, nocov, outside:(s<0 || s>L) };
   });
   batchL = L; batchSel = -1; batchThr = { a: bp.aZ, b: bp.bZ };
@@ -744,21 +820,27 @@ function renderBatch(){
     const sName = (r.nocov || r.e.inside) ? '—' : (r.sf ? t[r.sf] : surfNameAt(r.q, r.d, t));
     const allow = (r.nocov || r.e.inside) ? '—' : r.e.allow.toFixed(2);
     const marg  = (r.nocov || r.e.inside) ? '—' : (-r.e.pen).toFixed(2);
-    return '<tr onclick="loadRow('+i+')"><td>'+r.pt.id+'</td><td>'+r.d.toFixed(1)+'</td><td>'+r.s.toFixed(0)+
+    return '<tr onclick="loadRow('+i+')"><td>'+esc(r.pt.id)+'</td><td>'+r.d.toFixed(1)+'</td><td>'+r.s.toFixed(0)+
       '</td><td>'+r.clz.toFixed(2)+'</td><td>'+sName+'</td><td>'+allow+'</td><td>'+r.q.top.toFixed(2)+
       '</td><td>'+marg+'</td><td class="'+vcls+'">'+vtxt+'</td></tr>';
-  }).join('');
+  }).join('')
+  // rejected lines: shown with their reason, never judged, never silently defaulted
+  + batchBad.map(r =>
+    '<tr><td>'+esc(r.id)+'</td><td colspan="7" style="text-align:right;color:#8a5600">'+esc(r.raw).slice(0,90)+
+    '</td><td class="cell-inv">'+t.b_inv+' — '+(t[r.reason]||r.reason)+'</td></tr>').join('');
   const head = '<tr>'+[t.b_c1,t.b_c2,t.b_c3,t.b_c4,t.b_c5,t.b_c6,t.b_c7,t.b_c8,t.b_c9].map(h=>'<th>'+h+'</th>').join('')+'</tr>';
   document.getElementById('bTableWrap').innerHTML = '<table class="btab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
   const m = document.getElementById('bSummary');
-  m.style.display='block'; m.className = 'verdict ' + ((npen+nin>0) ? 'bad' : 'good');
-  m.textContent = t.b_sum.replace('{n}',batchRows.length).replace('{ok}',nok).replace('{pen}',npen).replace('{ins}',nin).replace('{out}',nout);
+  const ninv = batchBad.length;
+  m.style.display='block'; m.className = 'verdict ' + ((npen+nin>0) ? 'bad' : (ninv>0 ? 'warn' : 'good'));
+  m.textContent = t.b_sum.replace('{n}',batchRows.length).replace('{ok}',nok).replace('{pen}',npen).replace('{ins}',nin).replace('{out}',nout)
+                + (ninv ? ' · ' + t.b_suminv.replace('{inv}', ninv) : '');
   document.getElementById('b_csvbtn').style.display='inline-block';
   document.getElementById('b_clearbtn').style.display='inline-block';
   document.getElementById('b_click').style.display='block';
 }
 function clearBatch(){
-  batchRows = null; batchSel = -1; batchThr = null;
+  batchRows = null; batchSel = -1; batchThr = null; batchBad = [];
   document.getElementById('bSummary').style.display='none';
   document.getElementById('bTableWrap').innerHTML='';
   document.getElementById('b_csvbtn').style.display='none';
@@ -788,14 +870,19 @@ function exportBatch(){
   if (!batchRows) return;
   const lines = ['id,dist_CL_m,station_m,CL_elev_m,surface_rank,allowed_elev_m,top_elev_m,margin_m,verdict'];
   const sfMap = { sfApp:'approach', sfToc:'take_off_climb', sfT:'transitional', sfIH:'inner_horizontal', sfCon:'conical' };
+  const csvSafe = s => { let v2 = String(s).replace(/"/g,'""');
+    if (/^[=+\-@]/.test(v2)) v2 = "'" + v2;               // spreadsheet formula-injection guard
+    return /[",،\n]/.test(v2) ? '"'+v2+'"' : v2; };
   for (const r of batchRows){
-    let v = r.nocov ? 'NO_COVERAGE' : (r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK'));
+    let v = r.nocov ? 'OUTSIDE_MODELED_SURFACES' : (r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK'));
     if (r.outside && !r.nocov) v = 'BEYOND_THR+'+v;
     const sp2 = surfParts(r.q), blank = r.nocov || r.e.inside;
     const sName = blank ? '' : (r.sf ? sfMap[r.sf] : (r.d<=sp2.tEnd ? 'transitional' : (r.d<=sp2.ihEnd ? 'inner_horizontal' : 'conical')));
-    lines.push([r.pt.id, r.d.toFixed(2), r.s.toFixed(1), r.clz.toFixed(2), sName,
+    lines.push([csvSafe(r.pt.id), r.d.toFixed(2), r.s.toFixed(1), r.clz.toFixed(2), sName,
       blank?'':r.e.allow.toFixed(2), r.q.top.toFixed(2), blank?'':(-r.e.pen).toFixed(2), v].join(','));
   }
+  for (const b2 of batchBad)
+    lines.push([csvSafe(b2.id), '', '', '', '', '', '', '', 'INVALID_INPUT:'+b2.reason.replace('inv_','').toUpperCase()+':line_'+b2.ln].join(','));
   const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'ols-batch-results.csv'; a.click();
@@ -830,12 +917,13 @@ function update(){
   document.getElementById('nCL').textContent = fmt(p.cl);
   document.getElementById('nG').textContent = fmt(p.g);
   document.getElementById('nTop').textContent = fmt(p.top);
-  document.getElementById('nAllow').textContent = e.inside ? t.inside : fmt(e.allow);
-  document.getElementById('nPen').textContent = e.inside ? '—' : (e.pen>0 ? t.pen+fmt(e.pen) : t.marg+fmt(-e.pen));
+  document.getElementById('nAllow').textContent = e.inside ? t.inside : (e.ncov ? '—' : fmt(e.allow));
+  document.getElementById('nPen').textContent = (e.inside || e.ncov) ? '—' : (e.pen>0 ? t.pen+fmt(e.pen) : t.marg+fmt(-e.pen));
   document.getElementById('nMin').textContent = isFinite(e.dmin) ? e.dmin.toFixed(1)+t.m : t.never;
   const v = document.getElementById('verdict');
-  const sName = e.inside ? '' : surfNameAt(p, p.d, t);
-  if (e.inside){ v.className='verdict bad'; v.textContent = t.v_inside; }
+  const sName = (e.inside || e.ncov) ? '' : surfNameAt(p, p.d, t);
+  if (e.ncov){ v.className='verdict warn'; v.textContent = t.b_nocov; }
+  else if (e.inside){ v.className='verdict bad'; v.textContent = t.v_inside; }
   else if (!isFinite(e.dmin) && e.pen > 0){ v.className='verdict bad'; v.textContent = '✗ ' + t.v_never; }
   else if (e.pen > 0){ v.className='verdict bad'; v.textContent = t.v_pen.replace('{s}', sName).replace('{x}', e.pen.toFixed(2)); }
   else { v.className='verdict good'; v.textContent = t.v_ok.replace('{s}', sName).replace('{x}', (-e.pen).toFixed(2)); }
@@ -885,7 +973,8 @@ function draw2d(p,e){
   const dminX = isFinite(e.dmin) ? e.dmin+40 : 0;
   const xmax = Math.max(p.strip+120, p.d+60, dminX, 260);
   const relG = p.g - p.cl;
-  const ymin = Math.min(-2, relG-2), ymax = Math.max(10, relG+p.H+4, allowRelAt(p, xmax)+2);
+  const relCap = allowRelAt(p, Math.min(xmax, sp.conEnd));
+  const ymin = Math.min(-2, relG-2), ymax = Math.max(10, relG+p.H+4, (Number.isFinite(relCap)?relCap:sp.conTop)+2);
   const rtl = (T().dir==='rtl');
   const x0=50, x1=W-30;
   const X = m => rtl ? x1-(m/xmax)*(x1-x0) : x0+(m/xmax)*(x1-x0);
@@ -908,22 +997,24 @@ function draw2d(p,e){
   ctx.strokeStyle=C.stripEdge; ctx.setLineDash([7,5]); ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(X(p.strip),yT); ctx.lineTo(X(p.strip),yB); ctx.stroke(); ctx.setLineDash([]);
   // forbidden airspace above the piecewise surface profile
+  const irD = Math.max(sp.ir, 0);
   const prof=[[p.strip,0]];
-  if (xmax > sp.tEnd) prof.push([sp.tEnd, p.ihH]);
-  if (xmax > sp.ihEnd) prof.push([sp.ihEnd, p.ihH]);
+  if (xmax > sp.tEnd) prof.push([sp.tEnd, irD]);
+  if (xmax > sp.ihEnd) prof.push([sp.ihEnd, irD]);
   if (xmax > sp.conEnd) prof.push([sp.conEnd, sp.conTop]);
-  prof.push([xmax, allowRelAt(p, xmax)]);
+  const xcap = Math.min(xmax, sp.conEnd);
+  prof.push([xcap, allowRelAt(p, xcap)]);
   ctx.fillStyle=C.forb; ctx.beginPath();
   ctx.moveTo(X(prof[0][0]),Y(prof[0][1]));
   for(let i=1;i<prof.length;i++) ctx.lineTo(X(prof[i][0]),Y(prof[i][1]));
-  ctx.lineTo(X(xmax),yT); ctx.lineTo(X(p.strip),yT); ctx.closePath(); ctx.fill();
+  ctx.lineTo(X(xcap),yT); ctx.lineTo(X(p.strip),yT); ctx.closePath(); ctx.fill();
   ctx.strokeStyle=C.surfEdge; ctx.lineWidth=3; ctx.beginPath();
   ctx.moveTo(X(prof[0][0]),Y(prof[0][1]));
   for(let i=1;i<prof.length;i++) ctx.lineTo(X(prof[i][0]),Y(prof[i][1]));
   ctx.stroke();
-  // object: fence bar or crane glyph
+  // object: fence bar or crane glyph (amber when outside the modelled surfaces)
   const ok = !e.inside && e.pen<=0;
-  const oc = ok?C.good:C.bad;
+  const oc = e.ncov ? '#b8860b' : (ok?C.good:C.bad);
   ctx.fillStyle = oc; ctx.strokeStyle = oc;
   const fx=X(p.d);
   if (p.otype==='crane'){
@@ -1379,11 +1470,12 @@ function draw3d(p,e){
   }
 
   // ---- 5. OLS roof: transitional, capped by the inner horizontal plateau ----
-  const segs=[];
+  const segs=[], irS = Math.max(ols.ir, 0);
   const xT = Math.min(xmax, ols.tEnd);
   segs.push([p.strip, 0, xT, allowRelAt(p,xT)]);
-  if (xmax > ols.tEnd) segs.push([ols.tEnd, p.ihH, Math.min(xmax, ols.ihEnd), p.ihH]);
-  if (xmax > ols.ihEnd) segs.push([ols.ihEnd, p.ihH, xmax, allowRelAt(p,xmax)]);
+  if (xmax > ols.tEnd) segs.push([ols.tEnd, irS, Math.min(xmax, ols.ihEnd), irS]);
+  if (xmax > ols.ihEnd){ const xc = Math.min(xmax, ols.conEnd);
+    segs.push([ols.ihEnd, irS, xc, allowRelAt(p,xc)]); }
   for(const [xa,ha,xb,hb] of segs){
     const poly = clipPoly([toCam(xa,ha,-Zl),toCam(xb,hb,-Zl),toCam(xb,hb,Zl),toCam(xa,ha,Zl)]);
     if(poly.length<3) continue;
