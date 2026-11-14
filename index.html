@@ -79,7 +79,8 @@
   .cell-warn { color:var(--warn-fg,#a97a17); font-weight:700; }
   :root[data-theme="dark"] { --warn-fg:#e3b65a; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn-fg:#e3b65a; } }
-  .trio { display:flex; gap:6px; }
+  .trio { display:flex; gap:6px; min-width:0; }
+  .trio input { flex:1 1 0; min-width:0; width:100%; }
   footer { text-align:center; color:var(--footer); font-size:12.5px; padding:8px 14px 22px; line-height:1.7; }
   .credit { margin-top:6px; opacity:.85; }
 </style>
@@ -208,7 +209,7 @@
         </div>
       </div>
       <div class="grid">
-        <div class="ctl">
+        <div class="ctl" style="flex:1.7; min-width:290px">
           <label id="b_l_thrA"></label>
           <div class="trio">
             <input type="text" id="aE" inputmode="decimal" placeholder="E" style="direction:ltr">
@@ -217,7 +218,7 @@
           </div>
           <div class="hint" id="b_h_thrA"></div>
         </div>
-        <div class="ctl">
+        <div class="ctl" style="flex:1.7; min-width:290px">
           <label id="b_l_thrB"></label>
           <div class="trio">
             <input type="text" id="bE" inputmode="decimal" placeholder="E" style="direction:ltr">
@@ -226,9 +227,9 @@
           </div>
           <div class="hint" id="b_h_thrB"></div>
         </div>
-        <div class="ctl">
+        <div class="ctl" style="flex:.8; min-width:150px">
           <label id="b_l_hdef"></label>
-          <input type="number" id="bH" step="0.1" min="0" max="300" value="2.5">
+          <input type="number" id="bH" step="0.1" min="0" max="300" value="2.5" style="min-width:0; width:100%">
           <div class="hint" id="b_h_hdef"></div>
         </div>
         <div class="ctl">
