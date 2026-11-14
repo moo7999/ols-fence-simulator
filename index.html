@@ -560,7 +560,7 @@ function rwyPick(){
   if(batchRows) runBatch(); else update();
 }
 // ================= batch check =================
-let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null;
+let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null, batchU = null;
 let preBatch = null;   // the single-point inputs as the user left them, before the batch auto-loaded a row
 // show each threshold's runway designator next to its input box, in the scene and on the plan inset
 function thrName(which){
@@ -701,6 +701,7 @@ function runBatch(){
     preBatch = { cl:v('cl'), g:v('g'), dn:v('distNum'), ds:v('dist'), h:v('hgt') };
   }
   const p0 = params(), ux = dx/L, uy = dy/L;
+  batchU = { ux, uy };   // runway unit vector in E/N, for the plan inset's north arrow
   batchRows = pts.map(pt=>{
     const H = pt.H ?? (Number.isFinite(bp.H0) ? bp.H0 : 0);
     const s  = (pt.E-bp.aE)*ux + (pt.N-bp.aN)*uy;
@@ -1474,8 +1475,11 @@ function draw3d(p,e){
     ctx.fill(); ctx.stroke();
     ctx.globalAlpha = 1;
     const prs = batchRows;
+    const LAY2 = (typeof APT_LAYOUT!=='undefined') && APT_LAYOUT[(document.getElementById('aptSel')||{}).value];
     let aMin = Math.min(0, ...prs.map(r=>r.s)), aMax = Math.max(batchL, ...prs.map(r=>r.s));
     let cMin = Math.min(0, ...prs.map(r=>r.cx)), cMax = Math.max(0, ...prs.map(r=>r.cx));
+    if (LAY2){ cMin = Math.min(cMin, -385); cMax = Math.max(cMax, 30);
+      for(const sw of LAY2.swy||[]){ aMin = Math.min(aMin, sw[0]); aMax = Math.max(aMax, sw[1]); } }
     const mpad = 0.06*Math.max(aMax-aMin, cMax-cMin);
     aMin-=mpad; aMax+=mpad; cMin-=mpad; cMax+=mpad;
     const S = Math.min((IW-20)/(aMax-aMin), (IH-32)/(cMax-cMin));
@@ -1497,6 +1501,21 @@ function draw3d(p,e){
       ctx.beginPath(); ctx.moveTo(e1x,e1y); ctx.lineTo(e2x,e2y); ctx.stroke();
     }
     ctx.setLineDash([]);
+    // aerodrome footprint (taxiway, apron, terminal, stopways) so the viewer orients at a glance
+    if (LAY2){
+      const rect=(s1,s2,x1,x2,fill)=>{ const [X1,Y1]=MX(s1,x1), [X2,Y2]=MX(s2,x2);
+        ctx.fillStyle=fill; ctx.fillRect(Math.min(X1,X2),Math.min(Y1,Y2),Math.max(Math.abs(X2-X1),1),Math.max(Math.abs(Y2-Y1),1)); };
+      for(const sw of LAY2.swy||[]) rect(sw[0],sw[1],-22.5,22.5,'rgba(90,93,96,.55)');
+      for(const tw of LAY2.twy||[]) tw.dir==='x' ? rect(tw.s-11.5,tw.s+11.5,tw.x1,tw.x2,'rgba(120,124,128,.45)')
+                                                 : rect(tw.s1,tw.s2,tw.x-11.5,tw.x+11.5,'rgba(120,124,128,.45)');
+      for(const ap of LAY2.apron||[]) rect(ap[0],ap[1],ap[2],ap[3],'rgba(140,144,148,.4)');
+      for(const bd of LAY2.bldg||[]) rect(bd.s1,bd.s2,bd.x1,bd.x2,'rgba(58,70,78,.65)');
+      if (LAY2.bldg && LAY2.bldg.length){
+        const bd=LAY2.bldg[0], [tx2,ty2]=MX((bd.s1+bd.s2)/2,-380);
+        ctx.font='9px Tahoma'; ctx.fillStyle='#4a5660'; ctx.textAlign='center';
+        ctx.fillText(lang==='en'?'Terminal':'الصالة', tx2, ty2);
+      }
+    }
     // fence polyline, coloured per segment verdict
     for (let i=0;i<prs.length-1;i++){
       const a=prs[i], b2=prs[i+1];
@@ -1515,6 +1534,22 @@ function draw3d(p,e){
     }
     ctx.font = 'bold 12px Tahoma'; ctx.textAlign = 'center';
     ctx.fillStyle = '#16454E'; ctx.fillText(t.b_plan, ix+IW/2, iy+16);
+    // north arrow: true north rotated into the runway frame, so orientation is never guesswork
+    if (batchU){
+      const nx = batchU.uy, ny = -batchU.ux, nl = Math.hypot(nx,ny)||1;
+      const ax = nx/nl, ay = ny/nl, cx2 = ix+IW-21, cy2 = iy+IH-21;
+      ctx.beginPath(); ctx.arc(cx2,cy2,13,0,6.3);
+      ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fill();
+      ctx.strokeStyle='rgba(22,69,78,.55)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx2-ax*8,cy2-ay*8); ctx.lineTo(cx2+ax*4,cy2+ay*4);
+      ctx.strokeStyle='#B2383B'; ctx.lineWidth=1.8; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx2+ax*9,cy2+ay*9);
+      ctx.lineTo(cx2+ax*3-ay*3, cy2+ay*3+ax*3);
+      ctx.lineTo(cx2+ax*3+ay*3, cy2+ay*3-ax*3);
+      ctx.closePath(); ctx.fillStyle='#B2383B'; ctx.fill();
+      ctx.font='bold 10px Tahoma'; ctx.fillStyle='#B2383B'; ctx.textAlign='center';
+      ctx.fillText(lang==='en'?'N':'ش', cx2+ax*21, cy2+ay*21+3.5);
+    }
     ctx.restore();
   }
 }
