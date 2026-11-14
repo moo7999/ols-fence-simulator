@@ -9,13 +9,13 @@
 <meta property="og:title" content="OLS Fence Simulator — محاكي أسطح تحديد العوائق">
 <meta property="og:description" content="Instant ICAO Annex 14 compliance check for fences and objects near runways — bilingual AR/EN, interactive 3D walk mode, offline, open source (MIT).">
 <meta property="og:url" content="https://ols-fence-simulator.netlify.app/">
-<meta property="og:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=7">
+<meta property="og:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=8">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="OLS Fence Simulator — محاكي أسطح تحديد العوائق">
 <meta name="twitter:description" content="Instant ICAO Annex 14 compliance check for fences and objects near runways — bilingual, 3D, offline, open source.">
-<meta name="twitter:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=7">
+<meta name="twitter:image" content="https://ols-fence-simulator.netlify.app/docs/social.png?v=8">
 <title>OLS Fence Simulator</title>
 <style>
   :root { --teal:#1F9AA0; --dark:#16454E;
@@ -132,8 +132,8 @@
     <div class="grid" style="margin-top:12px">
       <div class="ctl">
         <label><span id="l_d"></span> <span class="val" id="dVal"></span></label>
-        <input type="range" id="dist" min="0" max="600" step="0.5" value="152">
-        <input type="number" id="distNum" step="1" min="0" max="8000" value="152" style="margin-top:6px">
+        <input type="range" id="dist" min="0" max="600" step="0.5" value="180">
+        <input type="number" id="distNum" step="1" min="0" max="8000" value="180" style="margin-top:6px">
         <div class="hint" id="h_dnum"></div>
       </div>
       <div class="ctl">
@@ -299,6 +299,7 @@ const I = {
   thrLbl:'عتبة', thrA:'العتبة أ', thrB:'العتبة ب',
   b_nocov:'⚠ خارج نطاق التغطية',
   note_bey:'النقطة خلف العتبة — حكمها من {s}، والمقطع العرضي الجانبي لا ينطبق عليها',
+  warn_gap:'فرق المنسوب بين الأرض والمحور يتجاوز 200 م — غالباً خطأ إدخال أو لصق، تحقق من الخانتين',
   opt_f:'سور شبكي', opt_cr:'رافعة برجية', craneLbl:'الرافعة',
   never:'لا تكفي أي مسافة', v_never:'القمة أعلى من قمة السطح المخروطي — لا توجد مسافة جانبية كافية بهذا الارتفاع',
   far3d:'خارج إطار العرض — القيم والمقطع العرضي دقيقان',
@@ -361,6 +362,7 @@ const I = {
   thrLbl:'THR', thrA:'THR A', thrB:'THR B',
   b_nocov:'⚠ Outside coverage',
   note_bey:'Point lies beyond the threshold — its verdict comes from the {s}; the lateral cross-section does not apply to it',
+  warn_gap:'Ground and centreline elevations differ by more than 200 m — most likely a typo or paste slip, check both fields',
   opt_f:'Mesh fence', opt_cr:'Tower crane', craneLbl:'Crane',
   never:'No distance clears', v_never:'Object top is above the conical surface top — no lateral distance clears this height',
   far3d:'beyond 3D frame — values and cross-section remain exact',
@@ -550,7 +552,12 @@ function rwyPick(){
   let msg=T().apt_note.replace('{z}', pa.zone);
   if(rw.a[2]==null || rw.b[2]==null) msg+=' — '+T().apt_noz;
   note.textContent=msg;
-  if(batchRows) runBatch();
+  // open on a realistic compliant state for this airport: elevations from THR A, body at a safe distance
+  if(rw.a[2]!=null && !batchRows){
+    sv('cl', rw.a[2].toFixed(2)); sv('g', rw.a[2].toFixed(2));
+    sv('dist','180'); sv('distNum','180');
+  }
+  if(batchRows) runBatch(); else update();
 }
 // ================= batch check =================
 let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null;
@@ -846,6 +853,14 @@ function update(){
       document.getElementById('viewnote').textContent = t.note_bey.replace('{s}', r.nocov ? '—' : t[r.sf]);
     }
   }
+  // sanity guard: an elevation gap this large is almost always a paste slip, never a real site
+  {
+    const vn = document.getElementById('viewnote');
+    if (Math.abs(p.g - p.cl) > 200){
+      vn.textContent = '⚠ ' + t.warn_gap + (vn.textContent ? ' — ' + vn.textContent : '');
+      vn.style.color = '#9a6b00'; vn.style.fontWeight = '600';
+    } else { vn.style.color = ''; vn.style.fontWeight = ''; }
+  }
   lastP=p; lastE=e;
   if (view==='3d') draw3d(p,e); else draw2d(p,e);
 }
@@ -937,6 +952,25 @@ function draw2d(p,e){
 }
 
 // ================= 3D =================
+// per-airport ground layout — stations in metres from THR A along the runway, cross-track x (+ = the surfaces side, − = opposite).
+// Navaids and stopways are taken from the AIP AD 2 entry; taxiway/apron/buildings are SCHEMATIC until survey data lands.
+const APT_LAYOUT = {
+  OEHL: { L:3300,
+    swy: [[-60,0],[3300,3720]],
+    twy: [ {s1:-10, s2:3300, x:-242},
+           {dir:'x', s:25,   x1:-23, x2:-242},
+           {dir:'x', s:600,  x1:-23, x2:-242},
+           {dir:'x', s:1700, x1:-23, x2:-242},
+           {dir:'x', s:1835, x1:-23, x2:-242},
+           {dir:'x', s:2650, x1:-23, x2:-242},
+           {dir:'x', s:3250, x1:-23, x2:-242} ],
+    apron: [[1565,1954,-253,-332,'a'],[1590,1930,-261,-324,'c']],
+    bldg: [ {s1:1660,s2:1880,x1:-336,x2:-362,h:13},
+            {s1:1902,s2:1924,x1:-338,x2:-354,h:26,teal:1} ],
+    gp:[297,-129], loc:[3908], vor:[3308,238], papi:[330,2970],
+    lbl: [['A',950,-242,1.5],['A1',600,-130,1.5],['A2',2650,-130,1.5],['A3',3250,-130,1.5],
+          ['الساحة',1760,-290,1.5,'Apron'],['الصالة — تمثيلي',1770,-375,3,'Terminal — schematic']] }
+};
 const ANIM0 = performance.now();
 let lastP=null, lastE=null;
 const cam = { mode:'orbit', yaw:-0.78, pitch:0.52, dist:860, f:900,
@@ -956,10 +990,11 @@ function draw3d(p,e){
   const relG = p.g - p.cl;
   const Zl = 260;          // runway / fence / surface length
   const Zt = 470;          // terrain length
-  const Xf = 300;          // terrain side extension
+  const Xf = (typeof APT_LAYOUT!=='undefined' && APT_LAYOUT[(document.getElementById('aptSel')||{}).value]) ? 460 : 300;  // terrain side extension (wider when a ground layout is drawn)
   const cx = xmax*0.45, cy2=(relG+p.H)*YEX*0.4, cz=0;
   const rampEnd = Math.max(75, Math.min(Math.abs(p.d) - 20, 420));
   const groundAt = x => { const a=Math.abs(x); return a<=45?0 : a>=rampEnd?relG : relG*(a-45)/(rampEnd-45); };
+  window.SCENE_EXT = Math.max(600, xmax + Xf*0.6, Math.abs(relG)*YEX*1.1, (relG+p.H)*YEX*1.1);
   const eyeY = groundAt(cam.wx)*YEX + 1.7*YEX;
 
   // sky
@@ -1084,6 +1119,55 @@ function draw3d(p,e){
   }
   // ---- 3. strip edge (dashed teal) ----
   for(let z=-Zl; z<Zl; z+=26) line([p.strip,0.06,z],[p.strip,0.06,z+13], '#1F9AA0', 2.4);
+  // ---- 3b. aerodrome ground layout (per-airport; stations in metres from THR A) ----
+  {
+    const LAY = (typeof APT_LAYOUT!=='undefined') && APT_LAYOUT[(document.getElementById('aptSel')||{}).value];
+    if (LAY){
+      const L2 = LAY.L, zcap = Zt-14, zz0=-Zl*0.92, zz1=Zl*0.92;
+      const zs = s => Math.max(-zcap, Math.min(zcap, zz1 - (s/L2)*(zz1-zz0)));
+      const gy = x => groundAt(x) + 0.03;
+      const pave=(s1,s2,x1,x2,col,alpha)=>quad([x1,gy(x1),zs(s1)],[x2,gy(x2),zs(s1)],[x2,gy(x2),zs(s2)],[x1,gy(x1),zs(s2)],col,alpha==null?1:alpha);
+      // stopways (declared in the AIP) — darker slabs past each end
+      for(const sw of LAY.swy||[]) pave(sw[0],sw[1],-22.5,22.5,[84,86,88],1);
+      // parallel taxiway + connectors
+      for(const tw of LAY.twy||[]){
+        if (tw.dir==='x') pave(tw.s-11.5, tw.s+11.5, tw.x1, tw.x2, [96,98,100],1);
+        else { pave(tw.s1, tw.s2, tw.x-11.5, tw.x+11.5, [96,98,100],1);
+               for(let s=tw.s1+40; s<tw.s2-40; s+=160) line([tw.x,gy(tw.x)+0.05,zs(s)],[tw.x,gy(tw.x)+0.05,zs(Math.min(s+70,tw.s2-40))],'rgba(255,214,70,.8)',1.6); }
+      }
+      // aprons: asphalt ring then concrete heart
+      for(const ap of LAY.apron||[]) pave(ap[0],ap[1],ap[2],ap[3], ap[4]==='c'?[168,170,172]:[104,106,108],1);
+      // buildings: simple shaded boxes (terminal, tower)
+      for(const bd of LAY.bldg||[]){
+        const za=zs(bd.s1), zb=zs(bd.s2), xa=bd.x1, xb=bd.x2, yb=gy((xa+xb)/2), yt=yb+bd.h*(1/YEX);
+        quad([xa,yb,za],[xa,yb,zb],[xa,yt,zb],[xa,yt,za],[214,216,220],1);
+        quad([xb,yb,za],[xb,yb,zb],[xb,yt,zb],[xb,yt,za],[196,198,202],1);
+        quad([xa,yb,za],[xb,yb,za],[xb,yt,za],[xa,yt,za],[205,207,211],1);
+        quad([xa,yb,zb],[xb,yb,zb],[xb,yt,zb],[xa,yt,zb],[205,207,211],1);
+        quad([xa,yt,za],[xb,yt,za],[xb,yt,zb],[xa,yt,zb], bd.teal?[27,112,118]:[228,230,233],1,'rgba(105,112,121,.6)',1);
+      }
+      // navaids from the AIP: GP/DME mast, localizer array, DVOR/TACAN
+      if (LAY.gp){ const z2=zs(LAY.gp[0]), x2=LAY.gp[1], y2=gy(x2);
+        line([x2,y2,z2],[x2,y2+3,z2],'#5a6066',2.2);
+        quad([x2-1.6,y2+2.3,z2-0.4],[x2+1.6,y2+2.3,z2-0.4],[x2+1.6,y2+1.4,z2-0.4],[x2-1.6,y2+1.4,z2-0.4],[205,60,60],1); }
+      if (LAY.loc){ const z2=zs(LAY.loc[0]);
+        for(let i=-5;i<=5;i++) line([i*2.6,gy(i*2.6),z2],[i*2.6,gy(i*2.6)+0.8,z2],'#b24a4e',2); }
+      if (LAY.vor){ const z2=zs(LAY.vor[0]), x2=LAY.vor[1], y2=gy(x2);
+        for(let k2=0;k2<10;k2++){ const a1=k2/10*2*Math.PI, a2=(k2+1)/10*2*Math.PI, r2=9;
+          quad([x2+r2*Math.cos(a1),y2+0.08,z2+r2*Math.sin(a1)],[x2+r2*Math.cos(a2),y2+0.08,z2+r2*Math.sin(a2)],[x2,y2+1.2,z2],[x2,y2+1.2,z2],[232,234,236],1); }
+        line([x2,y2,z2],[x2,y2+2.1,z2],'#5a6066',2); }
+      // PAPI bars (both sides per the AIP) near each threshold
+      for(const pp of LAY.papi||[]){ const z2=zs(pp);
+        for(const sd of [1,-1]) for(let i=0;i<4;i++)
+          line([sd*(34+i*5),gy(sd*(34+i*5)),z2],[sd*(34+i*5),gy(sd*(34+i*5))+0.35,z2],'#d8d8d8',2.6); }
+      // labels
+      if (LAY.lbl) for(const lb of LAY.lbl){ const Pt=P3(lb[2],gy(lb[2])+lb[3],zs(lb[1]));
+        if(Pt){ const txt=(lang==='en'&&lb[4])?lb[4]:lb[0];
+          ctx.font='bold 12px Tahoma'; ctx.textAlign='center';
+          ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.strokeText(txt,Pt[0],Pt[1]);
+          ctx.fillStyle='#4a5660'; ctx.fillText(txt,Pt[0],Pt[1]); } }
+    }
+  }
   // ---- 4. fence shadow then fence (single object, or the full batch fence) ----
   const hasBatch = !!(batchRows && batchRows.length);
   const okAll = hasBatch ? batchRows.every(r=>!r.e.inside && r.e.pen<=0) : (!e.inside && e.pen<=0);
@@ -1207,18 +1291,79 @@ function draw3d(p,e){
       bz = 228 + 5*Math.sin(tsec*0.8); h = 1.6; beacon = (Math.floor(tsec*2.4)%2===0);
     }
     if (show){
-      const P=(dx,dy,vz)=>[dx, h+dy - vz*pit, bz+vz*dir];
-      if (h < 4) quad(P(-W2,-h+0.07,-5),P(W2,-h+0.07,-5),P(W2,-h+0.07,5),P(-W2,-h+0.07,5),[88,88,88],0.25);
-      quad(P(0,0,2.8),P(-W2,0,7.5),P(-W2,0,2),P(0,0,-3),[221,225,231],1,EG,1.2);
-      quad(P(0,0,2.8),P(W2,0,7.5),P(W2,0,2),P(0,0,-3),[205,210,217],1,EG,1.2);
-      quad(P(-5,-1.2*V,5.2),P(-8.5,-1.2*V,5.2),P(-8.5,-1.2*V,1.2),P(-5,-1.2*V,1.2),[118,124,132],1,EG,1);
-      quad(P(5,-1.2*V,5.2),P(8.5,-1.2*V,5.2),P(8.5,-1.2*V,1.2),P(5,-1.2*V,1.2),[118,124,132],1,EG,1);
-      quad(P(0,-2.2*V,FL*0.44),P(0,2.5*V,FL*0.41),P(0,2.5*V,-FL*0.40),P(0,-2.2*V,-FL*0.45),[247,249,251],1,EG,1.2);
-      quad(P(-2.4,1.2*V,FL*0.44),P(2.4,1.2*V,FL*0.44),P(2.4,1.2*V,-FL*0.40),P(-2.4,1.2*V,-FL*0.40),[238,241,246],1,EG,1);
-      quad(P(-2.4,1.2*V,-FL*0.40),P(2.4,1.2*V,-FL*0.40),P(0,-0.5*V,-FL*0.56),P(0,-0.5*V,-FL*0.56),[233,237,242],1,EG,1);
-      quad(P(0,1.6*V,FL*0.44),P(0,9*V,FL*0.57),P(0,9*V,FL*0.50),P(0,1.6*V,FL*0.36),[27,112,118],1,'rgba(16,70,76,.9)',1.2);
-      quad(P(-9,1.8*V,FL*0.46),P(9,1.8*V,FL*0.46),P(6,1.8*V,FL*0.36),P(-6,1.8*V,FL*0.36),[221,225,231],1,EG,1);
-      if (beacon) quad(P(-0.8,9.3*V,FL*0.52),P(0.8,9.3*V,FL*0.52),P(0.8,9.3*V,FL*0.49),P(-0.8,9.3*V,FL*0.49),[228,52,56],0.95);
+      const P=(dx,dy,vz)=>[dx, h+dy*V - vz*pit, bz+vz*dir];
+      // ground shadow, fading with height
+      if (h < 26){ const sa=0.26*(1-h/26);
+        quad(P(-W2,0,8),P(W2,0,8),P(W2*0.5,0,-20),P(-W2*0.5,0,-20),[70,72,74],sa); }
+      // ---- depth-sorted solid jet: faces gathered, sorted far-to-near, then filled ----
+      const F=[];
+      const face=(pts,base,alpha,edge,lw,bias)=>{ F.push({pts:pts.map(q=>P(...q)),base,alpha,edge,lw,bias:bias||0}); };
+      // fuselage: octagonal tube through tapered rings (vz, radius); nose at -vz
+      const RG=[[-23.5,0.22],[-20.2,1.15],[-14,2.05],[-4,2.3],[8,2.3],[15,1.9],[20.3,1.0],[22.8,0.4]];
+      const CY=2.75, K=8;
+      const ring=(vz,r)=>{ const o=[]; for(let k2=0;k2<K;k2++){ const a=(k2+0.5)/K*2*Math.PI;
+        o.push([r*Math.sin(a), CY+r*Math.cos(a), vz]); } return o; };
+      const RR=RG.map(g2=>ring(g2[0],g2[1]));
+      for(let i2=0;i2<RG.length-1;i2++) for(let k2=0;k2<K;k2++){
+        const a=(k2+0.5)/K*2*Math.PI, up=Math.cos(a+Math.PI/K);
+        const s2=up>0.45?244:(up>-0.45?224:198), last=i2>=RG.length-3;
+        face([RR[i2][k2],RR[i2][(k2+1)%K],RR[i2+1][(k2+1)%K],RR[i2+1][k2]],
+          last&&up<-0.45?[24,96,102]:[s2,s2+2,s2+6],1);
+      }
+      face(RR[0].slice().reverse(),[180,184,190],1);                                   // nose cap
+      // cockpit glazing on the two upper-front segments
+      for(const k2 of [0,K-1]){ const a=(k2+0.5)/K*2*Math.PI;
+        const g2=(vz,r)=>[r*1.03*Math.sin(a), CY+r*1.03*Math.cos(a), vz];
+        face([g2(-20,1.15),g2(-16.2,1.9),g2(-14.6,1.9),g2(-18.6,1.15)],[38,52,60],1); }
+      // low-set swept wings with thickness hint + teal winglets
+      for(const s2 of [1,-1]){
+        const rootA=[s2*2.1,1.5,-2.5], rootB=[s2*2.1,1.5,5.5], tipA=[s2*21.5,3.4,4.2], tipB=[s2*21.5,3.4,6.8];
+        face([rootA,rootB,tipB,tipA],[236,239,243],1,EG,1);
+        face([[s2*2.1,1.15,-2.5],[s2*2.1,1.15,5.5],[s2*21.5,3.05,6.8],[s2*21.5,3.05,4.2]],[182,186,192],1,null,null,3);
+        face([tipA,tipB,[s2*21.9,6.1,6.6],[s2*21.9,6.1,5.2]],[27,112,118],1,'rgba(16,70,76,.9)',1);
+        // engine nacelle under the wing + pylon + dark intake
+        const ex=s2*7.4, er=1.28, ec=0.95;
+        for(let k2=0;k2<K;k2++){ const a=(k2+0.5)/K*2*Math.PI, up=Math.cos(a+Math.PI/K);
+          const s3=up>0.45?236:(up>-0.45?214:188);
+          const n1=[ex+er*Math.sin(a),ec+er*Math.cos(a),-6.3], n2=[ex+er*Math.sin(a),ec+er*Math.cos(a),-1.2];
+          const a2=(k2+1.5)/K*2*Math.PI;
+          face([n1,[ex+er*Math.sin(a2),ec+er*Math.cos(a2),-6.3],[ex+er*Math.sin(a2),ec+er*Math.cos(a2),-1.2],n2],[s3,s3,s3+4],1); }
+        face(ring(-6.35,er).map(q=>[ex+q[0]-0, ec-CY+q[1], q[2]]).reverse(),[42,46,52],1);  // intake disc
+        face([[ex-0.5,1.9,-4.8],[ex+0.5,1.9,-4.8],[ex+0.5,1.9,-1.6],[ex-0.5,1.9,-1.6]],[208,212,218],1);
+        // tailplane
+        face([[s2*1.3,3.1,18.6],[s2*1.3,3.1,22.6],[s2*8.4,3.9,23.1],[s2*8.4,3.9,21.2]],[229,232,237],1,EG,1);
+      }
+      // vertical fin in the tool's teal, with a light flash
+      for(const s2 of [0.14,-0.14]){
+        face([[s2,3.3,15.6],[s2,3.3,22.8],[s2,9.6,23.4],[s2,9.6,21.4]],[27,112,118],1,'rgba(16,70,76,.9)',1.2);
+        face([[s2*1.05,4.1,16.6],[s2*1.05,4.1,18.1],[s2*1.05,8.6,22.0],[s2*1.05,8.6,21.1]],[234,240,241],1); }
+      // landing gear: out on the ground, folding away above ~10 m
+      const g=Math.max(0,Math.min(1,(10-h)/6));
+      if (g>0.05){
+        const leg=(x2,vz,ln)=>{ const yb=CY-2.0-(ln-0.9)*g;
+          face([[x2-0.16,CY-1.6,vz],[x2+0.16,CY-1.6,vz],[x2+0.16,yb+0.9,vz],[x2-0.16,yb+0.9,vz]],[120,124,130],1);
+          for(const s3 of [0.34,-0.34]) face([[x2+s3,yb+0.9,vz-0.55],[x2+s3,yb+0.9,vz+0.55],[x2+s3,yb,vz+0.55],[x2+s3,yb,vz-0.55]],[34,36,40],1); };
+        leg(0,-15.5,2.75); leg(-2.9,3.4,2.75); leg(2.9,3.4,2.75);
+      }
+      // paint far-to-near so the body reads as one solid machine
+      for(const f2 of F){ const cs=f2.pts.map(q=>toCam(...q)); let d2=0; for(const c3 of cs) d2+=c3[2];
+        f2.cam=cs; f2.d=d2/cs.length + f2.bias; }
+      F.sort((a,b)=>b.d-a.d);
+      for(const f2 of F){
+        const poly=clipPoly(f2.cam); if(poly.length<3) continue;
+        const a=f2.pts[0], b2=f2.pts[1], d3=f2.pts[f2.pts.length-1];
+        const u=[b2[0]-a[0],(b2[1]-a[1])*YEX,b2[2]-a[2]], v=[d3[0]-a[0],(d3[1]-a[1])*YEX,d3[2]-a[2]];
+        let n=[u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+        const nl=Math.hypot(n[0],n[1],n[2])||1; n=n.map(x2=>x2/nl); if(n[1]<0) n=n.map(x2=>-x2);
+        let zc=0; const S=poly.map(c3=>{ zc+=c3[2]; return toScr(c3); }); zc/=poly.length;
+        ctx.beginPath(); ctx.moveTo(S[0][0],S[0][1]);
+        for(let i2=1;i2<S.length;i2++) ctx.lineTo(S[i2][0],S[i2][1]);
+        ctx.closePath(); ctx.globalAlpha=f2.alpha==null?1:f2.alpha;
+        ctx.fillStyle=`rgb(${shadeFog(f2.base,n,zc).join(',')})`; ctx.fill(); ctx.globalAlpha=1;
+        if(f2.edge){ ctx.strokeStyle=f2.edge; ctx.lineWidth=f2.lw||1; ctx.stroke(); }
+      }
+      if (beacon){ const B2=P3(0, h+9.8*V, bz+22.6*dir);
+        if(B2){ ctx.beginPath(); ctx.arc(B2[0],B2[1],4,0,7); ctx.fillStyle='rgba(228,52,56,.95)'; ctx.fill(); } }
     }
   }
 
@@ -1383,7 +1528,8 @@ function clampCam(){
     cam.wz = Math.max(-440, Math.min(440, cam.wz));
   } else {
     cam.pitch = Math.max(0.05, Math.min(1.55, cam.pitch));
-    cam.dist  = Math.max(760, Math.min(1700, cam.dist));
+    const dmax = Math.max(1700, (window.SCENE_EXT||0)*2.4);   // extreme elevations widen the zoom range so the aerial view stays reachable
+    cam.dist  = Math.max(760, Math.min(dmax, cam.dist));
   }
 }
 function walkMove(d){
@@ -1417,7 +1563,8 @@ function orbitStep(act){
   if(act==='out')  { if(w) walkMove(-22); else cam.dist += 70; }
   if(act==='reset'){
     cam.home = ((cam.home||0)+1)%4;
-    if(cam.home===0){ cam.mode='orbit'; cam.yaw=ORBIT_HOME.yaw; cam.pitch=ORBIT_HOME.pitch; cam.dist=ORBIT_HOME.dist; }
+    if(cam.home===0){ cam.mode='orbit'; cam.yaw=ORBIT_HOME.yaw; cam.pitch=ORBIT_HOME.pitch;
+      cam.dist = Math.max(ORBIT_HOME.dist, (window.SCENE_EXT||0)*1.3); }
     if(cam.home===1){ cam.mode='walk'; cam.wx=0; cam.wz=0;    cam.wyaw=1.5708;  cam.wpitch=0.06; } // mid-runway, facing fence
     if(cam.home===2){ cam.mode='walk'; cam.wx=0; cam.wz=-285; cam.wyaw=0;       cam.wpitch=0.05; } // S threshold, looking down the runway
     if(cam.home===3){ cam.mode='walk'; cam.wx=0; cam.wz=285;  cam.wyaw=3.1416;  cam.wpitch=0.05; } // N threshold, looking back
