@@ -953,7 +953,9 @@ function draw2d(p,e){
 }
 
 // ================= 3D =================
-// per-airport ground layout — stations in metres from THR A along the runway, cross-track x (+ = the surfaces side, − = opposite).
+// per-airport ground layout — stations in metres from THR A along the runway; x is the REAL signed cross-track,
+// in the same frame as the batch points' cx (for OEHL: + = west/fence side, − = east/terminal side).
+// The plan inset draws x as-is; the 3D scene mirrors the layout so it lands on the points' true side.
 // Navaids and stopways are taken from the AIP AD 2 entry; taxiway, connectors and apron frontage come from the KMZ survey file.
 // Still SCHEMATIC: the terminal building shape and the apron's eastern depth.
 const APT_LAYOUT = {
@@ -1128,20 +1130,26 @@ function draw3d(p,e){
       const L2 = LAY.L, zcap = Zt-14, zz0=-Zl*0.92, zz1=Zl*0.92;
       const zs = s => Math.max(-zcap, Math.min(zcap, zz1 - (s/L2)*(zz1-zz0)));
       const gy = x => groundAt(x) + 0.03;
-      const pave=(s1,s2,x1,x2,col,alpha)=>quad([x1,gy(x1),zs(s1)],[x2,gy(x2),zs(s1)],[x2,gy(x2),zs(s2)],[x1,gy(x1),zs(s2)],col,alpha==null?1:alpha);
+      // draw the layout on its REAL side: scene +x is the pasted points' side, so when the
+      // points sit on the negative cross-track side (e.g. east of OEHL), the layout mirrors with them
+      let mir = 1;
+      if (batchRows && batchRows.length){ let s3=0; for(const r of batchRows) s3 += (r.cx>=0?1:-1); if (s3<0) mir=-1; }
+      const X = x => x*mir;
+      const pave=(s1,s2,x1r,x2r,col,alpha)=>{ const x1=X(x1r), x2=X(x2r);
+        quad([x1,gy(x1),zs(s1)],[x2,gy(x2),zs(s1)],[x2,gy(x2),zs(s2)],[x1,gy(x1),zs(s2)],col,alpha==null?1:alpha); };
       // stopways (declared in the AIP) — darker slabs past each end
       for(const sw of LAY.swy||[]) pave(sw[0],sw[1],-22.5,22.5,[84,86,88],1);
       // parallel taxiway + connectors
       for(const tw of LAY.twy||[]){
         if (tw.dir==='x') pave(tw.s-11.5, tw.s+11.5, tw.x1, tw.x2, [96,98,100],1);
         else { pave(tw.s1, tw.s2, tw.x-11.5, tw.x+11.5, [96,98,100],1);
-               for(let s=tw.s1+40; s<tw.s2-40; s+=160) line([tw.x,gy(tw.x)+0.05,zs(s)],[tw.x,gy(tw.x)+0.05,zs(Math.min(s+70,tw.s2-40))],'rgba(255,214,70,.8)',1.6); }
+               for(let s=tw.s1+40; s<tw.s2-40; s+=160) line([X(tw.x),gy(tw.x)+0.05,zs(s)],[X(tw.x),gy(tw.x)+0.05,zs(Math.min(s+70,tw.s2-40))],'rgba(255,214,70,.8)',1.6); }
       }
       // aprons: asphalt ring then concrete heart
       for(const ap of LAY.apron||[]) pave(ap[0],ap[1],ap[2],ap[3], ap[4]==='c'?[168,170,172]:[104,106,108],1);
       // buildings: simple shaded boxes (terminal, tower)
       for(const bd of LAY.bldg||[]){
-        const za=zs(bd.s1), zb=zs(bd.s2), xa=bd.x1, xb=bd.x2, yb=gy((xa+xb)/2), yt=yb+bd.h*(1/YEX);
+        const za=zs(bd.s1), zb=zs(bd.s2), xa=X(bd.x1), xb=X(bd.x2), yb=gy((xa+xb)/2), yt=yb+bd.h*(1/YEX);
         quad([xa,yb,za],[xa,yb,zb],[xa,yt,zb],[xa,yt,za],[214,216,220],1);
         quad([xb,yb,za],[xb,yb,zb],[xb,yt,zb],[xb,yt,za],[196,198,202],1);
         quad([xa,yb,za],[xb,yb,za],[xb,yt,za],[xa,yt,za],[205,207,211],1);
@@ -1149,12 +1157,12 @@ function draw3d(p,e){
         quad([xa,yt,za],[xb,yt,za],[xb,yt,zb],[xa,yt,zb], bd.teal?[27,112,118]:[228,230,233],1,'rgba(105,112,121,.6)',1);
       }
       // navaids from the AIP: GP/DME mast, localizer array, DVOR/TACAN
-      if (LAY.gp){ const z2=zs(LAY.gp[0]), x2=LAY.gp[1], y2=gy(x2);
+      if (LAY.gp){ const z2=zs(LAY.gp[0]), x2=X(LAY.gp[1]), y2=gy(x2);
         line([x2,y2,z2],[x2,y2+3,z2],'#5a6066',2.2);
         quad([x2-1.6,y2+2.3,z2-0.4],[x2+1.6,y2+2.3,z2-0.4],[x2+1.6,y2+1.4,z2-0.4],[x2-1.6,y2+1.4,z2-0.4],[205,60,60],1); }
       if (LAY.loc){ const z2=zs(LAY.loc[0]);
         for(let i=-5;i<=5;i++) line([i*2.6,gy(i*2.6),z2],[i*2.6,gy(i*2.6)+0.8,z2],'#b24a4e',2); }
-      if (LAY.vor){ const z2=zs(LAY.vor[0]), x2=LAY.vor[1], y2=gy(x2);
+      if (LAY.vor){ const z2=zs(LAY.vor[0]), x2=X(LAY.vor[1]), y2=gy(x2);
         for(let k2=0;k2<10;k2++){ const a1=k2/10*2*Math.PI, a2=(k2+1)/10*2*Math.PI, r2=9;
           quad([x2+r2*Math.cos(a1),y2+0.08,z2+r2*Math.sin(a1)],[x2+r2*Math.cos(a2),y2+0.08,z2+r2*Math.sin(a2)],[x2,y2+1.2,z2],[x2,y2+1.2,z2],[232,234,236],1); }
         line([x2,y2,z2],[x2,y2+2.1,z2],'#5a6066',2); }
@@ -1163,7 +1171,7 @@ function draw3d(p,e){
         for(const sd of [1,-1]) for(let i=0;i<4;i++)
           line([sd*(34+i*5),gy(sd*(34+i*5)),z2],[sd*(34+i*5),gy(sd*(34+i*5))+0.35,z2],'#d8d8d8',2.6); }
       // labels
-      if (LAY.lbl) for(const lb of LAY.lbl){ const Pt=P3(lb[2],gy(lb[2])+lb[3],zs(lb[1]));
+      if (LAY.lbl) for(const lb of LAY.lbl){ const Pt=P3(X(lb[2]),gy(lb[2])+lb[3],zs(lb[1]));
         if(Pt){ const txt=(lang==='en'&&lb[4])?lb[4]:lb[0];
           ctx.font='bold 12px Tahoma'; ctx.textAlign='center';
           ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.strokeText(txt,Pt[0],Pt[1]);
