@@ -240,6 +240,7 @@
           <select id="bShape" onchange="update()">
             <option value="fence" selected id="b_shape_fence"></option>
             <option value="eq" id="b_shape_eq"></option>
+            <option value="pts" id="b_shape_pts"></option>
           </select>
           <div class="hint" id="b_h_shape"></div>
         </div>
@@ -309,6 +310,7 @@ const I = {
   inv_z:'منسوب أرض غير صالح', inv_h:'ارتفاع غير صالح — رقم من 0 إلى 300 مطلوب',
   h_hcap:'حد 30 م هو سقف شريط التمرير لا سقف الأسطح — للارتفاعات الأعلى استخدم الفحص الجماعي (حتى 300 م)',
   b_audit:'وضع التدقيق الهندسي', b_c10:'الأسطح المقيَّمة — المسموح لكل سطح والسهم على الحاكم',
+  b_shape_pts:'نقاط مستقلة', b_czone:'ضمن الكليرواي/منطقة سلامة نهاية المدرج — قيود إضافية تتجاوز فحص الأسطح',
   b_audit_note:'بداية سطح تسلق الإقلاع من نهاية الكليرواي المعلن في النشرة AD 2.13: {a} م خلف العتبة الأولى و{b} م خلف الثانية (صفر = لا كليرواي، فتبدأ من 60 م)، ومنسوب حافته الداخلية مقرب بمنسوب العتبة',
   note_bey:'النقطة خلف العتبة — حكمها من {s}، والمقطع العرضي الجانبي لا ينطبق عليها',
   warn_gap:'فرق المنسوب بين الأرض والمحور يتجاوز 200 م — غالباً خطأ إدخال أو لصق، تحقق من الخانتين',
@@ -379,6 +381,7 @@ const I = {
   inv_z:'invalid ground elevation', inv_h:'invalid height — a number from 0 to 300 is required',
   h_hcap:'30 m is the slider cap, not a surface limit — use the batch check for taller objects (up to 300 m)',
   b_audit:'Engineering audit', b_c10:'Surfaces evaluated — allowed per surface, arrow on the governing one',
+  b_shape_pts:'Independent points', b_czone:'within the clearway/RESA — extra restrictions beyond the surface check',
   b_audit_note:'The take-off climb inner edge starts at the end of the declared clearway (AIP AD 2.13): {a} m past threshold A and {b} m past threshold B (0 = none, so 60 m applies); its inner-edge elevation is approximated by the threshold elevation',
   note_bey:'Point lies beyond the threshold — its verdict comes from the {s}; the lateral cross-section does not apply to it',
   warn_gap:'Ground and centreline elevations differ by more than 200 m — most likely a typo or paste slip, check both fields',
@@ -434,7 +437,7 @@ function applyLang(){
   set('tab3d', t.tab3d); set('tab2d', t.tab2d);
   set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
   ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
-   'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_h_shape','b_audit'].forEach(k=> set(k, t[k]));
+   'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_shape_pts','b_h_shape','b_audit'].forEach(k=> set(k, t[k]));
   syncThrLabels();
   set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear); set('h_hcap', t.h_hcap);
   set('b_l_apt', t.b_l_apt); set('b_l_rwy', t.b_l_rwy); set('b_h_apt', t.b_h_apt);
@@ -816,8 +819,15 @@ function runBatch(){
       if (bey){ e = { inside:false, allow:bey.allow, pen:q.top - bey.allow, dmin:NaN }; sf = bey.sf; cands = bey.cands; }
       else { e = { inside:false, allow:NaN, pen:NaN, dmin:NaN }; nocov = true; }
     } else { e = evaluate(q); if (e.ncov) nocov = true; if (!e.inside && !nocov) cands = lateralCands(q, d); }
-    return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e, sf, nocov, cands, outside:(s<0 || s>L) };
+    // clearway / RESA advisory zone: past the 60 m strip extension but still within the declared
+    // clearway plus a 90 m RESA depth, near the extended centreline — extra rules beyond the surfaces
+    const czEnd = Math.max(TOC.dist, (s < 0 ? rwCwy[0] : rwCwy[1])) + 90;
+    const czone = (s < 0 || s > L) && !e.inside && x > 0 && x <= czEnd && d <= 75;
+    return { pt, H, s, sc, d, cx, clz, relg:pt.Z-clz, q, e, sf, nocov, cands, czone, outside:(s<0 || s>L) };
   });
+  for (let i=1;i<batchRows.length;i++)
+    batchRows[i].gapPrev = Math.hypot(batchRows[i].pt.E-batchRows[i-1].pt.E, batchRows[i].pt.N-batchRows[i-1].pt.N);
+  if (batchRows.length) batchRows[0].gapPrev = 0;
   batchL = L; batchSel = -1; batchThr = { a: bp.aZ, b: bp.bZ };
   renderBatch();
   // auto-load the governing (worst-margin) point into the single-point view,
@@ -840,6 +850,7 @@ function renderBatch(){
     else if (r.e.inside){ vcls='cell-bad'; vtxt=t.b_in; nin++; }
     else if (r.e.pen > 0){ vcls='cell-bad'; vtxt=t.b_pen+' '+r.e.pen.toFixed(2)+t.m; npen++; }
     else { vcls='cell-ok'; vtxt=t.b_ok+' '+(-r.e.pen).toFixed(2)+t.m; nok++; }
+    if (r.czone) vtxt += '<div class="cell-warn" style="font-size:11px; font-weight:600">⚠ '+t.b_czone+'</div>';
     const sName = (r.nocov || r.e.inside) ? '—' : (r.sf ? t[r.sf] : surfNameAt(r.q, r.d, t));
     const allow = (r.nocov || r.e.inside) ? '—' : r.e.allow.toFixed(2);
     const marg  = (r.nocov || r.e.inside) ? '—' : (-r.e.pen).toFixed(2);
@@ -913,6 +924,7 @@ function exportBatch(){
   for (const r of batchRows){
     let v = r.nocov ? 'OUTSIDE_MODELED_SURFACES' : (r.e.inside ? 'INSIDE_STRIP' : (r.e.pen>0 ? 'PENETRATES' : 'OK'));
     if (r.outside && !r.nocov) v = 'BEYOND_THR+'+v;
+    if (r.czone) v = 'CWY_RESA_ZONE+'+v;
     const sp2 = surfParts(r.q), blank = r.nocov || r.e.inside;
     const sName = blank ? '' : (r.sf ? sfMap[r.sf] : (r.d<=sp2.tEnd ? 'transitional' : (r.d<=sp2.ihEnd ? 'inner_horizontal' : 'conical')));
     const evald = (r.cands && r.cands.length)
@@ -1318,8 +1330,11 @@ function draw3d(p,e){
     // map real stations onto the scene runway — beyond-threshold stations extend past the slab, clamped to the terrain
     const zOf = s => Math.max(-(Zt-14), Math.min(Zt-14, z1 - (s/Math.max(batchL,1))*(z1-z0)));
     const BP = batchRows.map(r=>({ x:Math.min(r.d, 540), z: zOf(r.s),
-      y0:r.relg, y1:r.relg + r.H, bad:(r.e.inside || r.e.pen>0), out:r.nocov }));
-    const eqMode = document.getElementById('bShape').value === 'eq';
+      y0:r.relg, y1:r.relg + r.H, bad:(r.e.inside || r.e.pen>0), out:r.nocov, gap:r.gapPrev||0 }));
+    const shapeSel = document.getElementById('bShape').value;
+    const eqMode = shapeSel === 'eq', ptsMode = shapeSel === 'pts';
+    // points farther than 1 km apart are independent checks, not one structure — never connect them
+    const joined = i2 => BP[i2+1].gap <= 1000;
     // a wheel-loader symbol: body, cab, raised boom whose tip marks the point's declared max height,
     // with a dashed plumb line from the tip to the ground — the compliance height is the tip, the body is illustrative
     function machine(cx2, baseY, cz2, H2, ang, bad, lit){
@@ -1342,28 +1357,41 @@ function draw3d(p,e){
       const vc = bad ? 'rgba(125,38,41,.95)' : 'rgba(30,96,60,.95)';
       line(P2(Lb*0.62,0,H2), P2(Lb*0.62,0,0), vc, lit?2:1.2, [3,3]);
     }
-    if (eqMode){
+    if (ptsMode){
+      // independent points: one marker per point, no connections, no moving machine
+      for(let i=0;i<BP.length;i++){
+        const b=BP[i], sel=(i===batchSel);
+        const pc = b.bad ? 'rgba(125,38,41,.98)' : (b.out ? 'rgba(169,122,23,.98)' : 'rgba(30,96,60,.98)');
+        quad([b.x-3,b.y0+0.02,b.z-3],[b.x+3,b.y0+0.02,b.z-3],[b.x+3,b.y0+0.02,b.z+3],[b.x-3,b.y0+0.02,b.z+3],[120,112,92],0.35);
+        line([b.x,b.y0,b.z],[b.x,b.y1,b.z], pc, sel?5.5:3.5);
+        line([b.x-2.2,b.y1,b.z],[b.x+2.2,b.y1,b.z], pc, sel?4:2.6);
+      }
+    } else if (eqMode){
       for(let i=0;i<BP.length-1;i++){
+        if (!joined(i)) continue;
         const a=BP[i], b=BP[i+1];
         line([a.x,a.y0+0.05,a.z],[b.x,b.y0+0.05,b.z], 'rgba(96,88,62,.8)', 1.6, [7,6]);
       }
       for(let i=0;i<BP.length;i++){
         const b=BP[i], r=batchRows[i];
-        const nb=BP[Math.min(i+1,BP.length-1)], pb=BP[Math.max(i-1,0)];
-        machine(b.x, b.y0, b.z, r.H, Math.atan2(nb.z-pb.z, nb.x-pb.x), b.bad, i===batchSel);
+        const nb=(i<BP.length-1 && joined(i)) ? BP[i+1] : b;
+        const pb=(i>0 && joined(i-1)) ? BP[i-1] : b;
+        machine(b.x, b.y0, b.z, r.H, (nb===pb) ? 0 : Math.atan2(nb.z-pb.z, nb.x-pb.x), b.bad, i===batchSel);
       }
-      // one machine drives the whole path, holding each stretch's declared height
+      // one machine drives the connected stretches, holding each stretch's declared height
       const segs=[]; let tot=0;
-      for(let i=0;i<BP.length-1;i++){ const a=BP[i],b=BP[i+1]; const l=Math.hypot(b.x-a.x,b.z-a.z); segs.push(l); tot+=l; }
+      for(let i=0;i<BP.length-1;i++){ const a=BP[i],b=BP[i+1];
+        const l = joined(i) ? Math.hypot(b.x-a.x,b.z-a.z) : 0; segs.push(l); tot+=l; }
       if (tot > 1){
         let dcur = ((performance.now()-ANIM0)/1000 * 14) % tot, i2=0;
-        while (dcur > segs[i2] && i2 < segs.length-1){ dcur -= segs[i2]; i2++; }
-        const a=BP[i2], b=BP[i2+1], u2=dcur/Math.max(segs[i2],0.01);
+        while ((segs[i2]===0 || dcur > segs[i2]) && i2 < segs.length-1){ dcur -= segs[i2]; i2++; }
+        const a=BP[i2], b=BP[i2+1], u2=Math.min(1, dcur/Math.max(segs[i2],0.01));
         machine(a.x+(b.x-a.x)*u2, a.y0+(b.y0-a.y0)*u2, a.z+(b.z-a.z)*u2,
           batchRows[i2].H, Math.atan2(b.z-a.z, b.x-a.x), a.bad||b.bad, true);
       }
     } else {
     for(let i=0;i<BP.length-1;i++){
+      if (!joined(i)) continue;
       const a=BP[i], b=BP[i+1], bad=a.bad||b.bad;
       const col = bad ? [178,56,59] : [46,139,87];
       const lc  = bad ? 'rgba(125,38,41,.95)' : 'rgba(30,96,60,.95)';
@@ -1659,6 +1687,7 @@ function draw3d(p,e){
     // fence polyline, coloured per segment verdict
     for (let i=0;i<prs.length-1;i++){
       const a=prs[i], b2=prs[i+1];
+      if ((b2.gapPrev||0) > 1000) continue;        // independent checks, not one structure
       const bad = (a.e.inside||a.e.pen>0||b2.e.inside||b2.e.pen>0);
       ctx.strokeStyle = bad ? '#B2383B' : '#2E8B57'; ctx.lineWidth = 2.2;
       const [x1,y1]=MX(a.s,a.cx), [x2,y2]=MX(b2.s,b2.cx);
