@@ -210,6 +210,10 @@
           <select id="rwySel" onchange="rwyPick()"></select>
           <div class="hint" id="aptNote" style="color:var(--warn-fg,#a97a17); font-weight:700"></div>
         </div>
+        <div class="ctl" id="frameWrap" style="display:none; min-width:235px">
+          <label id="b_l_frame"></label>
+          <select id="frameSel" onchange="rwyPick()"></select>
+        </div>
       </div>
       <div class="grid">
         <div class="ctl" style="flex:1.7; min-width:290px">
@@ -301,7 +305,7 @@ const I = {
   l_ihe:'نهاية الأفقي الداخلي عن المحور (م)', h_ihe:'المسافة من خط المنتصف التي يبدأ بعدها السطح المخروطي بميل 5% ويرتفع 100 م إضافية',
   h_dnum:'أو اكتب المسافة مباشرة لأي قيمة حتى 8000 م',
   sfT:'السطح الانتقالي', sfIH:'السطح الأفقي الداخلي', sfCon:'السطح المخروطي', gov:'السطح الحاكم',
-  sfApp:'سطح الاقتراب', sfToc:'سطح تسلق الإقلاع', b_endSurf:'سطحا الاقتراب والإقلاع',
+  sfApp:'سطح الاقتراب', sfToc:'سطح تسلق الإقلاع', sfOhs:'السطح الأفقي الخارجي', b_endSurf:'سطحا الاقتراب والإقلاع',
   thrLbl:'عتبة', thrA:'العتبة أ', thrB:'العتبة ب',
   b_nocov:'⚠ خارج نطاق الأسطح المحسوبة — ليست مطابقة',
   b_inv:'غير صالحة', b_suminv:'{inv} غير صالحة (مستبعدة من الفحص)',
@@ -310,7 +314,8 @@ const I = {
   inv_z:'منسوب أرض غير صالح', inv_h:'ارتفاع غير صالح — رقم من 0 إلى 300 مطلوب',
   h_hcap:'حد 30 م هو سقف شريط التمرير لا سقف الأسطح — للارتفاعات الأعلى استخدم الفحص الجماعي (حتى 300 م)',
   b_audit:'وضع التدقيق الهندسي', b_c10:'الأسطح المقيَّمة — المسموح لكل سطح والسهم على الحاكم',
-  b_shape_pts:'نقاط مستقلة', b_czone:'ضمن الكليرواي/منطقة سلامة نهاية المدرج — قيود إضافية تتجاوز فحص الأسطح',
+  b_shape_pts:'نقاط مستقلة', b_l_frame:'مرجع العتبات', frame_main:'النشرة الحالية (مسح 2025)',
+  frame_legacy_on:'المرجع القديم مفعّل — للفحص ضد بيانات مرفوعة عليه فقط، والنشرة الحالية هي المعتمدة', b_czone:'ضمن الكليرواي/منطقة سلامة نهاية المدرج — قيود إضافية تتجاوز فحص الأسطح',
   b_audit_note:'بداية سطح تسلق الإقلاع من نهاية الكليرواي المعلن في النشرة AD 2.13: {a} م خلف العتبة الأولى و{b} م خلف الثانية (صفر = لا كليرواي، فتبدأ من 60 م)، ومنسوب حافته الداخلية مقرب بمنسوب العتبة',
   note_bey:'النقطة خلف العتبة — حكمها من {s}، والمقطع العرضي الجانبي لا ينطبق عليها',
   warn_gap:'فرق المنسوب بين الأرض والمحور يتجاوز 200 م — غالباً خطأ إدخال أو لصق، تحقق من الخانتين',
@@ -329,7 +334,7 @@ const I = {
   b_l_shape:'شكل النقاط في المشهد', b_shape_fence:'سور شبكي', b_shape_eq:'معدات عمل',
   b_h_shape:'المعدات تُرسم رمزياً بأقصى ارتفاع كل نقطة، وواحدة تتحرك على المسار — الحكم من الأرقام لا من الرسم',
   b_l_data:'النقاط: رقم، شرقية، شمالية، منسوب الأرض، ارتفاع اختياري',
-  b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف. وتُقبل الإحداثيات الجغرافية كما في خطابات الهيئة — عشرية أو درجات ودقائق وثوان بأحرف الجهات، خط العرض ثم الطول ثم منسوب الأرض فارتفاع اختياري — وتُحول تلقائياً على نطاق المطار المختار',
+  b_h_data:'سطر لكل نقطة، مفصول بفواصل أو مسافات أو من لصق خلايا الإكسل مباشرة — صفوف العناوين والأعمدة غير الرقمية تُتجاهل، وبدون فواصل آلاف. وتُقبل الإحداثيات الجغرافية كما ترد في المراسلات الرسمية — عشرية أو درجات ودقائق وثوان بأحرف الجهات، خط العرض ثم الطول ثم منسوب الأرض فارتفاع اختياري — وتُحول تلقائياً على نطاق المطار المختار',
   b_file:'إرفاق ملف…', b_run:'افحص النقاط', b_sample:'مثال جاهز', b_csv:'تنزيل النتائج',
   b_c1:'نقطة', b_c2:'المسافة عن المحور', b_c3:'المحطة', b_c4:'منسوب المحور', b_c5:'السطح الحاكم',
   b_c6:'المنسوب المسموح', b_c7:'قمة الجسم', b_c8:'الهامش', b_c9:'الحكم',
@@ -372,7 +377,7 @@ const I = {
   l_ihe:'Inner horizontal outer edge from CL (m)', h_ihe:'Distance from centreline where the conical surface begins, rising at 5% for a further 100 m',
   h_dnum:'Or type the distance directly, any value up to 8000 m',
   sfT:'transitional surface', sfIH:'inner horizontal surface', sfCon:'conical surface', gov:'Governing surface',
-  sfApp:'approach surface', sfToc:'take-off climb surface', b_endSurf:'approach & take-off climb surfaces',
+  sfApp:'approach surface', sfToc:'take-off climb surface', sfOhs:'outer horizontal surface', b_endSurf:'approach & take-off climb surfaces',
   thrLbl:'THR', thrA:'THR A', thrB:'THR B',
   b_nocov:'⚠ Outside the modelled surfaces — not a clearance',
   b_inv:'Invalid', b_suminv:'{inv} invalid (excluded from the check)',
@@ -381,7 +386,8 @@ const I = {
   inv_z:'invalid ground elevation', inv_h:'invalid height — a number from 0 to 300 is required',
   h_hcap:'30 m is the slider cap, not a surface limit — use the batch check for taller objects (up to 300 m)',
   b_audit:'Engineering audit', b_c10:'Surfaces evaluated — allowed per surface, arrow on the governing one',
-  b_shape_pts:'Independent points', b_czone:'within the clearway/RESA — extra restrictions beyond the surface check',
+  b_shape_pts:'Independent points', b_l_frame:'Threshold reference', frame_main:'Current AIP (2025 survey)',
+  frame_legacy_on:'Legacy frame active — only for checking data referenced to it; the current AIP frame is authoritative', b_czone:'within the clearway/RESA — extra restrictions beyond the surface check',
   b_audit_note:'The take-off climb inner edge starts at the end of the declared clearway (AIP AD 2.13): {a} m past threshold A and {b} m past threshold B (0 = none, so 60 m applies); its inner-edge elevation is approximated by the threshold elevation',
   note_bey:'Point lies beyond the threshold — its verdict comes from the {s}; the lateral cross-section does not apply to it',
   warn_gap:'Ground and centreline elevations differ by more than 200 m — most likely a typo or paste slip, check both fields',
@@ -400,7 +406,7 @@ const I = {
   b_l_shape:'Point shape in the scene', b_shape_fence:'Mesh fence', b_shape_eq:'Work equipment',
   b_h_shape:'Machines are drawn symbolically at each point’s declared height, one drives the path — the verdict comes from the numbers, not the drawing',
   b_l_data:'Points: id, easting, northing, ground elevation, optional height',
-  b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators. Geographic coordinates as written in authority letters are accepted too — decimal or D-M-S with hemisphere letters, latitude then longitude then ground elevation and optional height — converted automatically in the selected airport\u2019s zone',
+  b_h_data:'One line per point, separated by commas, spaces, or pasted straight from Excel cells — header rows and non-numeric columns are ignored; no thousands separators. Geographic coordinates as written in official correspondence are accepted too — decimal or D-M-S with hemisphere letters, latitude then longitude then ground elevation and optional height — converted automatically in the selected airport\u2019s zone',
   b_file:'Attach file…', b_run:'Check points', b_sample:'Load sample', b_csv:'Download results',
   b_c1:'Point', b_c2:'Distance from CL', b_c3:'Station', b_c4:'CL elevation', b_c5:'Governing surface',
   b_c6:'Max allowed', b_c7:'Object top', b_c8:'Margin', b_c9:'Verdict',
@@ -437,7 +443,7 @@ function applyLang(){
   set('tab3d', t.tab3d); set('tab2d', t.tab2d);
   set('f_scope', t.f_scope); set('f_rule', t.f_rule); set('f_disc', t.f_disc); set('f_credit', t.f_credit);
   ['b_title','b_intro','b_l_thrA','b_l_thrB','b_h_thrA','b_h_thrB','b_l_hdef','b_h_hdef','b_l_data','b_h_data',
-   'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_shape_pts','b_h_shape','b_audit'].forEach(k=> set(k, t[k]));
+   'b_file','b_run','b_sample','b_click','b_l_shape','b_shape_fence','b_shape_eq','b_shape_pts','b_h_shape','b_audit','b_l_frame'].forEach(k=> set(k, t[k]));
   syncThrLabels();
   set('b_csvbtn', t.b_csv); set('b_clearbtn', t.b_clear); set('h_hcap', t.h_hcap);
   set('b_l_apt', t.b_l_apt); set('b_l_rwy', t.b_l_rwy); set('b_h_apt', t.b_h_apt);
@@ -465,7 +471,8 @@ function params(){
   const aZv = parseFloat(document.getElementById('aZ').value);
   const bZv = parseFloat(document.getElementById('bZ').value);
   const ihZ = (Number.isFinite(aZv) && Number.isFinite(bZv)) ? Math.min(aZv, bZv) + ihH : cl + ihH;
-  return {cl,g,strip,slope,d,H, top:g+H, ihH, ihZ, ihEnd, conS:20, conRise:100, otype};
+  return {cl,g,strip,slope,d,H, top:g+H, ihH, ihZ, ihEnd, conS:20, conRise:100, otype,
+          ohs: rwOhs, ohsR: 15000};   // outer horizontal: datum+150, r=15 km, only where officially established
 }
 // lateral OLS profile: transitional (1:slope) capped by the single inner-horizontal plane (ihZ),
 // then conical at 5% (1:20) from ihEnd rising conRise metres above that plane. ir is the IH
@@ -473,12 +480,13 @@ function params(){
 function surfParts(p){
   const ir = p.ihZ - p.cl;
   return { ir, tEnd: p.strip + p.slope*Math.max(ir, 0), ihEnd: p.ihEnd, conTop: ir + p.conRise,
-           conEnd: p.ihEnd + p.conS*p.conRise };
+           conEnd: p.ihEnd + p.conS*p.conRise, ohsRel: ir + 105 };   // OHS plane = (datum+150) = ihZ+105
 }
 function allowRelAt(p, d){            // allowed height above CL reference at lateral distance d
   if (d < p.strip) return NaN;
   const sp = surfParts(p);
-  if (d > sp.conEnd + 0.01) return NaN;   // beyond the conical outer edge (1 cm survey tolerance): no modelled surface governs
+  if (d > sp.conEnd + 0.01)
+    return (p.ohs && d <= p.ohsR) ? sp.ohsRel : NaN;   // outer horizontal where established, else no modelled surface
   let h = Math.min((d - p.strip)/p.slope, sp.ir);
   if (d > sp.ihEnd) h = Math.min(sp.ir + (d - sp.ihEnd)/p.conS, sp.conTop);
   return h;
@@ -487,7 +495,8 @@ function surfNameAt(p, d, t){
   const sp = surfParts(p);
   if (d <= sp.tEnd) return t.sfT;
   if (d <= sp.ihEnd) return t.sfIH;
-  return t.sfCon;
+  if (d <= sp.conEnd + 0.01) return t.sfCon;
+  return t.sfOhs;
 }
 function evaluate(p){
   const inside = p.d < p.strip;
@@ -515,7 +524,7 @@ const TOC = { inner:90,  dist:60, div:0.125, half:600, g:0.02, total:15000 };
 // 4.1.9). The inner horizontal and conical use the single aerodrome-wide plane p.ihZ, which is
 // 45 m above the LOWEST threshold per GACAR Part 139 Appendix G (c)(7); they wrap the end
 // radially from the threshold point. Returns the lowest covering surface, or null.
-function beyondAllowed(p, x, dAbs, thrZ, cwy){
+function beyondAllowed(p, x, dAbs, thrZ, cwy, swy){
   const cands = [], u = x - APP.dist;
   if (u >= 0 && u <= APP.total){
     const zApp = thrZ + Math.min(APP.g1*Math.min(u, APP.s1) + APP.g2*Math.max(0, Math.min(u - APP.s1, APP.s2)), APP.cap);
@@ -533,10 +542,13 @@ function beyondAllowed(p, x, dAbs, thrZ, cwy){
     const halfT = Math.min(TOC.inner + TOC.div*ut, TOC.half);
     if (dAbs <= halfT) cands.push([thrZ + TOC.g*ut, 'sfToc']);
   }
-  const r = Math.hypot(x, dAbs);                       // racetrack arcs about the threshold
-  // IH and conical use the single aerodrome-wide datum plane (p.ihZ), not this end's threshold
+  // racetrack arcs are centred at the STRIP end — (declared stopway + 60 m) beyond the threshold —
+  // matching the official survey's OLS model; the single aerodrome-wide datum plane (p.ihZ) applies
+  const rcOff = (swy || 0) + 60;
+  const r = Math.hypot(Math.max(0, x - rcOff), dAbs);
   if (r <= p.ihEnd) cands.push([p.ihZ, 'sfIH']);
   else if (r <= p.ihEnd + p.conS*p.conRise) cands.push([p.ihZ + (r - p.ihEnd)/p.conS, 'sfCon']);
+  else if (p.ohs && r <= p.ohsR) cands.push([p.ihZ + 105, 'sfOhs']);
   if (!cands.length) return null;
   cands.sort((a,b)=>a[0]-b[0]);
   return { allow: cands[0][0], sf: cands[0][1], cands };
@@ -547,11 +559,12 @@ function lateralCands(p, d){
   if (d >= p.strip && d <= sp.tEnd + 0.01) out.push([p.cl + (d - p.strip)/p.slope, 'sfT']);
   if (d <= p.ihEnd) out.push([p.ihZ, 'sfIH']);
   else if (d <= sp.conEnd + 0.01) out.push([Math.min(p.ihZ + (d - p.ihEnd)/p.conS, p.ihZ + p.conRise), 'sfCon']);
+  else if (p.ohs && d <= p.ohsR) out.push([p.ihZ + 105, 'sfOhs']);
   return out;
 }
 
 // ============ Saudi airports quick-fill (advisory data — the AIP always governs) ============
-const APTS = [{"c":"OEAB","ar":"أبها الدولي","en":"Abha International Airport","r":[{"id":"13/31","a":[18.2499008,42.6442986,2082.39],"b":[18.2308006,42.6689987,2090.32]}]},{"c":"OEAH","ar":"الأحساء الدولي","en":"Al-Ahsa International Airport","r":[{"id":"16/34","a":[25.2985992,49.4812012,179.22],"b":[25.2719994,49.4891014,175.26]}]},{"c":"OEBA","ar":"الباحة","en":"King Saud Bin Abdulaziz (Al Baha) Airport","r":[{"id":"07/25","a":[20.2912006,41.6190987,1670.91],"b":[20.3010998,41.6493988,1655.06]}]},{"c":"OEBH","ar":"بيشة","en":"Bisha Airport","r":[{"id":"18/36","a":[19.9979,42.6242981,1180.19],"b":[19.9703999,42.6213989,1184.45]}]},{"c":"OEDF","ar":"الملك فهد الدولي — الدمام","en":"King Fahd International Airport","r":[{"id":"16L/34R","a":[26.4885998,49.8036995,17.98],"b":[26.4538002,49.8143997,21.95]},{"id":"16R/34L","a":[26.4885998,49.7813988,14.63],"b":[26.4538002,49.792099,17.07]}]},{"c":"OEDM","ar":"الدوادمي","en":"Dawadmi Domestic Airport","r":[{"id":"15/33","a":[24.4622002,44.1144981,919.28],"b":[24.4375,44.1278,923.85]}]},{"c":"OEGN","ar":"جازان — الملك عبدالله","en":"Jizan Regional Airport / King Abdullah bin Abdulaziz Airport","r":[{"id":"15/33","a":[16.9130001,42.5786018,4.88],"b":[16.8890991,42.5928993,6.1]}]},{"c":"OEGS","ar":"القصيم الدولي","en":"Prince Naif bin Abdulaziz International Airport","r":[{"id":"15/33","a":[26.3148003,43.7669983,648.0],"b":[26.2908001,43.7807999,646.18]}]},{"c":"OEGT","ar":"قريات","en":"Gurayat Domestic Airport","r":[{"id":"10/28","a":[31.4158001,37.2640991,509.63],"b":[31.4081001,37.294899,500.18]}]},{"c":"OEHL","ar":"حائل الدولي","en":"Hail International Airport","r":[{"id":"18/36","a":[27.4546639,41.6873722,1001.88],"b":[27.4249194,41.685325,1015.29],"cwy":[400,420]}],"aip":1},{"c":"OEJB","ar":"الجبيل","en":"Jubail Airport","r":[{"id":"17/35","a":[27.0566006,49.4006004,5.79],"b":[27.0214996,49.4095993,7.62]}]},{"c":"OEJN","ar":"الملك عبدالعزيز الدولي — جدة","en":"King Abdulaziz International Airport","r":[{"id":"16C/34C","a":[21.69507,39.151543,7.92],"b":[21.661179,39.164917,7.92]},{"id":"16L/34R","a":[21.700436,39.167131,9.14],"b":[21.6665,39.1805,14.63]},{"id":"16R/34L","a":[21.7027,39.1269,3.96],"b":[21.6705,39.139599,3.96]}]},{"c":"OEMA","ar":"الأمير محمد بن عبدالعزيز — المدينة","en":"Prince Mohammad Bin Abdulaziz Airport","r":[{"id":"17/35","a":[24.5764065,39.7033157,655.62],"b":[24.5379925,39.7114716,634.9]},{"id":"18/36","a":[24.5634995,39.7039986,653.49],"b":[24.5359993,39.7019997,633.68]}]},{"c":"OENG","ar":"نجران","en":"Najran Domestic Airport","r":[{"id":"06/24","a":[17.6044998,44.4067001,1213.71],"b":[17.6182995,44.4315987,1206.4]}]},{"c":"OENN","ar":"خليج نيوم","en":"Neom Bay Airport","r":[{"id":"15/33","a":[27.935499,35.284599,7.62],"b":[27.919701,35.2929,9.75]}]},{"c":"OEPA","ar":"القيصومة — حفر الباطن","en":"Qaisumah–Hafar Al-Batin International Airport","r":[{"id":"16/34","a":[28.348867,46.121231,356.92],"b":[28.323328,46.132812,357.84]}]},{"c":"OERF","ar":"رفحاء","en":"Rafha Domestic Airport","r":[{"id":"11/29","a":[29.6317005,43.4765015,444.7],"b":[29.6210003,43.5049019,449.28]}]},{"c":"OERK","ar":"الملك خالد الدولي — الرياض","en":"King Khalid International Airport","r":[{"id":"15L/33R","a":[24.9769001,46.7019997,619.66],"b":[24.9440002,46.7228012,613.26]},{"id":"15R/33L","a":[24.9708996,46.6749001,624.54],"b":[24.9379997,46.6957016,619.66]}]},{"c":"OERR","ar":"عرعر","en":"Arar Domestic Airport","r":[{"id":"10/28","a":[30.9102001,41.1227989,552.6],"b":[30.9030991,41.1537018,549.86]}]},{"c":"OESH","ar":"شرورة","en":"Sharurah Domestic Airport","r":[{"id":"08/26","a":[17.4652996,47.1041985,712.01],"b":[17.468399,47.1385994,720.24]}]},{"c":"OESK","ar":"الجوف الدولي","en":"Al-Jawf International Airport","r":[{"id":"10/28","a":[29.7879009,40.0812988,689.15],"b":[29.7823009,40.1186981,688.85]}]},{"c":"OETB","ar":"الأمير سلطان بن عبدالعزيز — تبوك","en":"Prince Sultan bin Abdulaziz International Airport","r":[{"id":"06/24","a":[28.3691998,36.6198997,775.72],"b":[28.382,36.6509018,777.54]},{"id":"13/31","a":[28.3812008,36.5940018,771.14],"b":[28.3621998,36.6170998,773.89]}]},{"c":"OETF","ar":"الطائف الدولي","en":"Taif International Airport","r":[{"id":"07/25","a":[21.4773006,40.5205994,1477.67],"b":[21.4862995,40.5555,1443.84]},{"id":"17/35","a":[21.5063992,40.5409012,1448.71],"b":[21.4764004,40.5453987,1455.42]}]},{"c":"OETR","ar":"طريف","en":"Turaif Domestic Airport","r":[{"id":"10/28","a":[31.6963291,38.7159996,851.61],"b":[31.6891708,38.7464981,851.0]}]},{"c":"OEWD","ar":"وادي الدواسر","en":"Wadi Al Dawasir Domestic Airport","r":[{"id":"10/28","a":[20.5070992,45.1852989,628.5],"b":[20.5014,45.2137985,625.45]}]},{"c":"OEWJ","ar":"الوجه","en":"Al Wajh Domestic Airport","r":[{"id":"15/33","a":[26.2105007,36.4686012,19.81],"b":[26.1865997,36.4836006,20.12]}]},{"c":"OEYN","ar":"الأمير عبدالمحسن بن عبدالعزيز — ينبع","en":"Prince Abdulmohsen Bin Abdulaziz International Airport","r":[{"id":"10/28","a":[24.1474991,38.0480003,5.49],"b":[24.1408997,38.0788002,7.92]}]}];
+const APTS = [{"c":"OEAB","ar":"أبها الدولي","en":"Abha International Airport","r":[{"id":"13/31","a":[18.2499008,42.6442986,2082.39],"b":[18.2308006,42.6689987,2090.32]}]},{"c":"OEAH","ar":"الأحساء الدولي","en":"Al-Ahsa International Airport","r":[{"id":"16/34","a":[25.2985992,49.4812012,179.22],"b":[25.2719994,49.4891014,175.26]}]},{"c":"OEBA","ar":"الباحة","en":"King Saud Bin Abdulaziz (Al Baha) Airport","r":[{"id":"07/25","a":[20.2912006,41.6190987,1670.91],"b":[20.3010998,41.6493988,1655.06]}]},{"c":"OEBH","ar":"بيشة","en":"Bisha Airport","r":[{"id":"18/36","a":[19.9979,42.6242981,1180.19],"b":[19.9703999,42.6213989,1184.45]}]},{"c":"OEDF","ar":"الملك فهد الدولي — الدمام","en":"King Fahd International Airport","r":[{"id":"16L/34R","a":[26.4885998,49.8036995,17.98],"b":[26.4538002,49.8143997,21.95]},{"id":"16R/34L","a":[26.4885998,49.7813988,14.63],"b":[26.4538002,49.792099,17.07]}]},{"c":"OEDM","ar":"الدوادمي","en":"Dawadmi Domestic Airport","r":[{"id":"15/33","a":[24.4622002,44.1144981,919.28],"b":[24.4375,44.1278,923.85]}]},{"c":"OEGN","ar":"جازان — الملك عبدالله","en":"Jizan Regional Airport / King Abdullah bin Abdulaziz Airport","r":[{"id":"15/33","a":[16.9130001,42.5786018,4.88],"b":[16.8890991,42.5928993,6.1]}]},{"c":"OEGS","ar":"القصيم الدولي","en":"Prince Naif bin Abdulaziz International Airport","r":[{"id":"15/33","a":[26.3148003,43.7669983,648.0],"b":[26.2908001,43.7807999,646.18]}]},{"c":"OEGT","ar":"قريات","en":"Gurayat Domestic Airport","r":[{"id":"10/28","a":[31.4158001,37.2640991,509.63],"b":[31.4081001,37.294899,500.18]}]},{"c":"OEHL","ar":"حائل الدولي","en":"Hail International Airport","r":[{"id":"18/36","a":[27.4546639,41.6873722,995.17],"b":[27.4249194,41.685325,1006.14],"cwy":[400,420],"swy":[60,420],"ohs":1}],"aip":1},{"c":"OEJB","ar":"الجبيل","en":"Jubail Airport","r":[{"id":"17/35","a":[27.0566006,49.4006004,5.79],"b":[27.0214996,49.4095993,7.62]}]},{"c":"OEJN","ar":"الملك عبدالعزيز الدولي — جدة","en":"King Abdulaziz International Airport","r":[{"id":"16C/34C","a":[21.69507,39.151543,7.92],"b":[21.661179,39.164917,7.92]},{"id":"16L/34R","a":[21.700436,39.167131,9.14],"b":[21.6665,39.1805,14.63]},{"id":"16R/34L","a":[21.7027,39.1269,3.96],"b":[21.6705,39.139599,3.96]}]},{"c":"OEMA","ar":"الأمير محمد بن عبدالعزيز — المدينة","en":"Prince Mohammad Bin Abdulaziz Airport","r":[{"id":"17/35","a":[24.5764065,39.7033157,655.62],"b":[24.5379925,39.7114716,634.9]},{"id":"18/36","a":[24.5634995,39.7039986,653.49],"b":[24.5359993,39.7019997,633.68]}]},{"c":"OENG","ar":"نجران","en":"Najran Domestic Airport","r":[{"id":"06/24","a":[17.6044998,44.4067001,1213.71],"b":[17.6182995,44.4315987,1206.4]}]},{"c":"OENN","ar":"خليج نيوم","en":"Neom Bay Airport","r":[{"id":"15/33","a":[27.935499,35.284599,7.62],"b":[27.919701,35.2929,9.75]}]},{"c":"OEPA","ar":"القيصومة — حفر الباطن","en":"Qaisumah–Hafar Al-Batin International Airport","r":[{"id":"16/34","a":[28.348867,46.121231,356.92],"b":[28.323328,46.132812,357.84]}]},{"c":"OERF","ar":"رفحاء","en":"Rafha Domestic Airport","r":[{"id":"11/29","a":[29.6317005,43.4765015,444.7],"b":[29.6210003,43.5049019,449.28]}]},{"c":"OERK","ar":"الملك خالد الدولي — الرياض","en":"King Khalid International Airport","r":[{"id":"15L/33R","a":[24.9769001,46.7019997,619.66],"b":[24.9440002,46.7228012,613.26]},{"id":"15R/33L","a":[24.9708996,46.6749001,624.54],"b":[24.9379997,46.6957016,619.66]}]},{"c":"OERR","ar":"عرعر","en":"Arar Domestic Airport","r":[{"id":"10/28","a":[30.9102001,41.1227989,552.6],"b":[30.9030991,41.1537018,549.86]}]},{"c":"OESH","ar":"شرورة","en":"Sharurah Domestic Airport","r":[{"id":"08/26","a":[17.4652996,47.1041985,712.01],"b":[17.468399,47.1385994,720.24]}]},{"c":"OESK","ar":"الجوف الدولي","en":"Al-Jawf International Airport","r":[{"id":"10/28","a":[29.7879009,40.0812988,689.15],"b":[29.7823009,40.1186981,688.85]}]},{"c":"OETB","ar":"الأمير سلطان بن عبدالعزيز — تبوك","en":"Prince Sultan bin Abdulaziz International Airport","r":[{"id":"06/24","a":[28.3691998,36.6198997,775.72],"b":[28.382,36.6509018,777.54]},{"id":"13/31","a":[28.3812008,36.5940018,771.14],"b":[28.3621998,36.6170998,773.89]}]},{"c":"OETF","ar":"الطائف الدولي","en":"Taif International Airport","r":[{"id":"07/25","a":[21.4773006,40.5205994,1477.67],"b":[21.4862995,40.5555,1443.84]},{"id":"17/35","a":[21.5063992,40.5409012,1448.71],"b":[21.4764004,40.5453987,1455.42]}]},{"c":"OETR","ar":"طريف","en":"Turaif Domestic Airport","r":[{"id":"10/28","a":[31.6963291,38.7159996,851.61],"b":[31.6891708,38.7464981,851.0]}]},{"c":"OEWD","ar":"وادي الدواسر","en":"Wadi Al Dawasir Domestic Airport","r":[{"id":"10/28","a":[20.5070992,45.1852989,628.5],"b":[20.5014,45.2137985,625.45]}]},{"c":"OEWJ","ar":"الوجه","en":"Al Wajh Domestic Airport","r":[{"id":"15/33","a":[26.2105007,36.4686012,19.81],"b":[26.1865997,36.4836006,20.12]}]},{"c":"OEYN","ar":"الأمير عبدالمحسن بن عبدالعزيز — ينبع","en":"Prince Abdulmohsen Bin Abdulaziz International Airport","r":[{"id":"10/28","a":[24.1474991,38.0480003,5.49],"b":[24.1408997,38.0788002,7.92]}]}];
 function ll2utm(lat, lon, forceZone){
   const a=6378137, f=1/298.257223563, k0=0.9996;
   const e2=f*(2-f), ep2=e2/(1-e2);
@@ -588,30 +601,49 @@ function aptFillRwys(){
 function aptPick(){ aptFillRwys(); rwyPick(); }
 function rwyPick(){
   const a=aptCur(), note=document.getElementById('aptNote');
-  if(!a){ note.textContent=''; thrIds=null; rwCwy=[0,0]; syncThrLabels(); if(batchRows) update(); return; }
+  if(!a){ note.textContent=''; thrIds=null; rwCwy=[0,0]; rwSwy=[0,0]; rwProf=null; syncThrLabels(); if(batchRows) update(); return; }
   const rw=a.r[parseInt(document.getElementById('rwySel').value,10)||0];
   thrIds = rw.id.split('/');
   // declared clearways (AIP AD 2.13): [beyond THR A end, beyond THR B end]. The take-off climb
   // inner edge sits at the end of the clearway when one is declared (Annex 14 / GACAR App G).
   rwCwy = rw.cwy || [0,0];
+  rwSwy = rw.swy || [0,0];
+  rwOhs = !!rw.ohs;
+  rwProf = null;   // set below once the frame is known: the surveyed profile lives in the 2025 frame only
   syncThrLabels();
-  const pa=ll2utm(rw.a[0],rw.a[1]), pb=ll2utm(rw.b[0],rw.b[1]);
+  // dual reference frames: the main values are the current published frame; rw.alt holds a
+  // documented legacy frame the user can switch to for checking data referenced to it
+  const fs = document.getElementById('frameSel'), fw = document.getElementById('frameWrap');
+  if (rw.alt){
+    fw.style.display = 'block';
+    if (!fs.options.length){
+      fs.add(new Option('', 'main')); fs.add(new Option('', 'alt'));
+    }
+    fs.options[0].text = T().frame_main;
+    fs.options[1].text = (lang==='en' && rw.alt.en) ? rw.alt.en : rw.alt.ar;
+  } else { fw.style.display = 'none'; if (fs.options.length) fs.value = 'main'; }
+  const useAlt = rw.alt && fs.value === 'alt';
+  rwProf = (!useAlt && rw.prof) ? rw.prof : null;
+  const ca = useAlt ? rw.alt.a : rw.a, cb = useAlt ? rw.alt.b : rw.b;
+  const pa=ll2utm(ca[0],ca[1]), pb=ll2utm(cb[0],cb[1]);
   aptZone = pa.zone;
   const sv=(id,v)=>{ document.getElementById(id).value=v; };
-  sv('aE',pa.E.toFixed(2)); sv('aN',pa.N.toFixed(2)); sv('aZ', rw.a[2]!=null?rw.a[2].toFixed(2):'');
-  sv('bE',pb.E.toFixed(2)); sv('bN',pb.N.toFixed(2)); sv('bZ', rw.b[2]!=null?rw.b[2].toFixed(2):'');
+  sv('aE',pa.E.toFixed(2)); sv('aN',pa.N.toFixed(2)); sv('aZ', ca[2]!=null?ca[2].toFixed(2):'');
+  sv('bE',pb.E.toFixed(2)); sv('bN',pb.N.toFixed(2)); sv('bZ', cb[2]!=null?cb[2].toFixed(2):'');
   let msg=T().apt_note.replace('{z}', pa.zone);
-  if(rw.a[2]==null || rw.b[2]==null) msg+=' — '+T().apt_noz;
+  if(ca[2]==null || cb[2]==null) msg+=' — '+T().apt_noz;
+  if(rw.frameNote && !useAlt) msg+=' — ⚠ '+((lang==='en'&&rw.frameNote.en)?rw.frameNote.en:rw.frameNote.ar);
+  if(useAlt) msg+=' — ⚠ '+T().frame_legacy_on;
   note.textContent=msg;
   // open on a realistic compliant state for this airport: elevations from THR A, body at a safe distance
-  if(rw.a[2]!=null && !batchRows){
-    sv('cl', rw.a[2].toFixed(2)); sv('g', rw.a[2].toFixed(2));
+  if(ca[2]!=null && !batchRows){
+    sv('cl', ca[2].toFixed(2)); sv('g', ca[2].toFixed(2));
     sv('dist','180'); sv('distNum','180');
   }
   if(batchRows) runBatch(); else update();
 }
 // ================= batch check =================
-let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null, batchU = null, batchBad = [], rwCwy = [0,0];
+let batchRows = null, batchL = 0, batchSel = -1, batchThr = null, aptZone = 0, thrIds = null, batchU = null, batchBad = [], rwCwy = [0,0], rwSwy = [0,0], rwOhs = false, rwProf = null;
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let preBatch = null;   // the single-point inputs as the user left them, before the batch auto-loaded a row
 // show each threshold's runway designator next to its input box, in the scene and on the plan inset
@@ -677,7 +709,7 @@ function parseGeoLine(line){
   const H = (post.length >= 2 && post[1] > 0 && post[1] <= 300) ? post[1] : null;
   return { id: pre.length ? pre[0] : null, lat, lon, Z: post[0], H };
 }
-// one coordinate field holding an angle with a hemisphere letter: "27 25 30.46N", "N27.4584", "E41 41 23.94"
+// one coordinate field holding an angle with a hemisphere letter: "27 27 16.79N", "N27.4547", "E41 41 14.54"
 function parseAngleStr(sraw){
   if (!/[NSEWnsew]/.test(sraw)) return null;
   const m = sraw.match(/([NSEWnsew])/); const letter = m[1].toUpperCase();
@@ -809,13 +841,21 @@ function runBatch(){
     const s  = (pt.E-bp.aE)*ux + (pt.N-bp.aN)*uy;
     const sc = Math.min(Math.max(s,0), L);
     const d  = Math.hypot(pt.E-(bp.aE+s*ux), pt.N-(bp.aN+s*uy));
-    const clz = bp.aZ + (bp.bZ-bp.aZ)*sc/L;
+    // centreline elevation: the surveyed longitudinal profile when one is embedded (true vertical
+    // curvature, as the official OLS model uses), else linear between the two threshold elevations
+    let clz;
+    if (rwProf && rwProf.length > 1){
+      const sp2 = Math.max(rwProf[0][0], Math.min(rwProf[rwProf.length-1][0], s));
+      let i2 = 1; while (i2 < rwProf.length-1 && rwProf[i2][0] < sp2) i2++;
+      const [s1,z1b] = rwProf[i2-1], [s2b,z2b] = rwProf[i2];
+      clz = s2b===s1 ? z1b : z1b + (z2b-z1b)*(sp2-s1)/(s2b-s1);
+    } else clz = bp.aZ + (bp.bZ-bp.aZ)*sc/L;
     const cx = (pt.E-bp.aE)*uy - (pt.N-bp.aN)*ux;   // signed cross-track, for the true plan inset
     const q = {...p0, cl:clz, g:pt.Z, d, H, top:pt.Z+H};
     const x = s < 0 ? -s : (s > L ? s - L : 0);
     let e, sf = null, nocov = false, cands = [];
     if (x >= APP.dist){                       // beyond the threshold: approach / take-off climb territory
-      const bey = beyondAllowed(q, x, d, s < 0 ? bp.aZ : bp.bZ, s < 0 ? rwCwy[0] : rwCwy[1]);
+      const bey = beyondAllowed(q, x, d, s < 0 ? bp.aZ : bp.bZ, s < 0 ? rwCwy[0] : rwCwy[1], s < 0 ? rwSwy[0] : rwSwy[1]);
       if (bey){ e = { inside:false, allow:bey.allow, pen:q.top - bey.allow, dmin:NaN }; sf = bey.sf; cands = bey.cands; }
       else { e = { inside:false, allow:NaN, pen:NaN, dmin:NaN }; nocov = true; }
     } else { e = evaluate(q); if (e.ncov) nocov = true; if (!e.inside && !nocov) cands = lateralCands(q, d); }
@@ -917,7 +957,7 @@ function loadRow(i, scroll=true){
 function exportBatch(){
   if (!batchRows) return;
   const lines = ['id,dist_CL_m,station_m,CL_elev_m,surface_rank,allowed_elev_m,top_elev_m,margin_m,verdict,surfaces_evaluated'];
-  const sfMap = { sfApp:'approach', sfToc:'take_off_climb', sfT:'transitional', sfIH:'inner_horizontal', sfCon:'conical' };
+  const sfMap = { sfApp:'approach', sfToc:'take_off_climb', sfT:'transitional', sfIH:'inner_horizontal', sfCon:'conical', sfOhs:'outer_horizontal' };
   const csvSafe = s => { let v2 = String(s).replace(/"/g,'""');
     if (/^[=+\-@]/.test(v2)) v2 = "'" + v2;               // spreadsheet formula-injection guard
     return /[",،\n]/.test(v2) ? '"'+v2+'"' : v2; };
@@ -1053,7 +1093,8 @@ function draw2d(p,e){
   if (xmax > sp.tEnd) prof.push([sp.tEnd, irD]);
   if (xmax > sp.ihEnd) prof.push([sp.ihEnd, irD]);
   if (xmax > sp.conEnd) prof.push([sp.conEnd, sp.conTop]);
-  const xcap = Math.min(xmax, sp.conEnd);
+  if (p.ohs && xmax > sp.conEnd) prof.push([sp.conEnd, sp.ohsRel]);
+  const xcap = Math.min(xmax, p.ohs ? p.ohsR : sp.conEnd);
   prof.push([xcap, allowRelAt(p, xcap)]);
   ctx.fillStyle=C.forb; ctx.beginPath();
   ctx.moveTo(X(prof[0][0]),Y(prof[0][1]));
@@ -1543,6 +1584,8 @@ function draw3d(p,e){
   if (xmax > ols.tEnd) segs.push([ols.tEnd, irS, Math.min(xmax, ols.ihEnd), irS]);
   if (xmax > ols.ihEnd){ const xc = Math.min(xmax, ols.conEnd);
     segs.push([ols.ihEnd, irS, xc, allowRelAt(p,xc)]); }
+  if (p.ohs && xmax > ols.conEnd){ const xo = Math.min(xmax, p.ohsR);
+    segs.push([ols.conEnd, ols.ohsRel, xo, ols.ohsRel]); }
   for(const [xa,ha,xb,hb] of segs){
     const poly = clipPoly([toCam(xa,ha,-Zl),toCam(xb,hb,-Zl),toCam(xb,hb,Zl),toCam(xa,ha,Zl)]);
     if(poly.length<3) continue;
