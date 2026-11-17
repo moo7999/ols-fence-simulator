@@ -1161,7 +1161,7 @@ const APT_LAYOUT = {
 };
 const ANIM0 = performance.now();
 let lastP=null, lastE=null;
-const cam = { mode:'orbit', yaw:-0.78, pitch:0.52, dist:860, f:900,
+const cam = { mode:'orbit', yaw:0.78, pitch:0.52, dist:860, f:900,
               wx:0, wz:0, wyaw:1.5708, wpitch:0.06 };
 const YEX = 4; // vertical exaggeration
 const NEAR = 8;
@@ -1200,7 +1200,9 @@ function draw3d(p,e){
     const y2=Y0*cp + z1*sp, z2=z1*cp - Y0*sp;
     return [x1, y2, z2 + (walk?0:cam.dist)];
   }
-  function toScr(c){ const sc=cam.f/c[2]; return [W/2+c[0]*sc, Hc/2-c[1]*sc, c[2]]; }
+  // screen x is mirrored so the rendered world is true-handed: from the terminal side the
+  // northern threshold sits on the viewer's right, exactly as on the ground
+  function toScr(c){ const sc=cam.f/c[2]; return [W/2-c[0]*sc, Hc/2-c[1]*sc, c[2]]; }
   function clipPoly(pts){
     const out=[], n=pts.length;
     for(let i=0;i<n;i++){
@@ -1696,15 +1698,17 @@ function draw3d(p,e){
     const S = Math.min((IW-20)/(aMax-aMin), (IH-32)/(cMax-cMin));
     const ox = ix+10 + ((IW-20) - S*(aMax-aMin))/2;
     const oy = iy+24 + ((IH-32) - S*(cMax-cMin))/2;
-    const MX = (a,c)=>[ ox + (a-aMin)*S, oy + (c-cMin)*S ];
+    // rotated 180° from the raw frame: the terminal/apron side (negative cross-track) sits at the
+    // BOTTOM and the first threshold on the RIGHT — the plan reads like standing at the terminal
+    const MX = (a,c)=>[ ox + (aMax-a)*S, oy + (cMax-c)*S ];
     // runway slab on the centreline
     const [r1x,r1y] = MX(0,0), [r2x,r2y] = MX(batchL,0);
     ctx.strokeStyle = '#55585c'; ctx.lineWidth = Math.max(3, 46*S);
     ctx.beginPath(); ctx.moveTo(r1x,r1y); ctx.lineTo(r2x,r2y); ctx.stroke();
     // threshold designators at each end of the slab
     ctx.font = 'bold 10px Tahoma'; ctx.textAlign = 'center'; ctx.fillStyle = '#16454E';
-    ctx.fillText(thrName(0), Math.max(ix + 26, r1x - 17), r1y - 7);
-    ctx.fillText(thrName(1), Math.min(ix + IW - 26, r2x + 17), r2y - 7);
+    ctx.fillText(thrName(0), Math.min(ix + IW - 26, r1x + 17), r1y - 7);
+    ctx.fillText(thrName(1), Math.max(ix + 26, r2x - 17), r2y - 7);
     // strip edges (dashed teal) at ±strip half-width
     ctx.strokeStyle = 'rgba(31,154,160,.8)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
     for (const sg of [p.strip, -p.strip]){
@@ -1748,7 +1752,7 @@ function draw3d(p,e){
     ctx.fillStyle = '#16454E'; ctx.fillText(t.b_plan, ix+IW/2, iy+16);
     // north arrow: true north rotated into the runway frame, so orientation is never guesswork
     if (batchU){
-      const nx = batchU.uy, ny = -batchU.ux, nl = Math.hypot(nx,ny)||1;
+      const nx = -batchU.uy, ny = batchU.ux, nl = Math.hypot(nx,ny)||1;
       const ax = nx/nl, ay = ny/nl, cx2 = ix+IW-21, cy2 = iy+IH-21;
       ctx.beginPath(); ctx.arc(cx2,cy2,13,0,6.3);
       ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fill();
@@ -1789,8 +1793,8 @@ cvEl.addEventListener('pointerdown', ev=>{ if(view!=='3d')return; ev.preventDefa
   try{ cvEl.setPointerCapture(ev.pointerId); }catch(e){} });
 cvEl.addEventListener('pointermove', ev=>{ if(!dragging||view!=='3d')return; ev.preventDefault();
   const dx=(ev.clientX-px), dy=(ev.clientY-py);
-  if(cam.mode==='walk'){ cam.wyaw += dx*0.004; cam.wpitch += dy*0.004; }
-  else { cam.yaw += dx*0.006; cam.pitch += dy*0.006; }
+  if(cam.mode==='walk'){ cam.wyaw -= dx*0.004; cam.wpitch += dy*0.004; }
+  else { cam.yaw -= dx*0.006; cam.pitch += dy*0.006; }
   clampCam(); px=ev.clientX; py=ev.clientY; update(); });
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=> cvEl.addEventListener(n, ()=>{ dragging=false; }));
 window.addEventListener('pointerup', ()=>{ dragging=false; });
@@ -1800,11 +1804,11 @@ cvEl.addEventListener('wheel', ev=>{ if(view!=='3d')return; ev.preventDefault();
   clampCam(); update(); }, {passive:false});
 
 // on-screen controls: work everywhere, including viewers that swallow drag gestures
-const ORBIT_HOME = { yaw:-0.78, pitch:0.52, dist:860 };
+const ORBIT_HOME = { yaw:0.78, pitch:0.52, dist:860 };   // default vantage: from the terminal side
 function orbitStep(act){
   const w = cam.mode==='walk';
-  if(act==='left') { if(w) cam.wyaw -= 0.10; else cam.yaw -= 0.12; }
-  if(act==='right'){ if(w) cam.wyaw += 0.10; else cam.yaw += 0.12; }
+  if(act==='left') { if(w) cam.wyaw += 0.10; else cam.yaw += 0.12; }
+  if(act==='right'){ if(w) cam.wyaw -= 0.10; else cam.yaw -= 0.12; }
   if(act==='up')   { if(w) cam.wpitch -= 0.06; else cam.pitch += 0.07; }
   if(act==='down') { if(w) cam.wpitch += 0.06; else cam.pitch -= 0.07; }
   if(act==='in')   { if(w) walkMove(22); else cam.dist -= 70; }
