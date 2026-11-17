@@ -1308,16 +1308,22 @@ function draw3d(p,e){
   // ---- 3. strip edge (dashed teal) ----
   for(let z=-Zl; z<Zl; z+=26) line([p.strip,0.06,z],[p.strip,0.06,z+13], '#1F9AA0', 2.4);
   // ---- 3b. aerodrome ground layout (per-airport; stations in metres from THR A) ----
+  // Scene +x is always the pasted points' side. To keep the scene a true (non-mirrored) picture of the
+  // aerodrome, the runway axis flips with that side: points on the +cx side put THR A at -z, points on
+  // the -cx side put THR A at +z. Either way, standing on the points' side you see the thresholds
+  // left/right exactly as on the ground.
+  let ptSide = -1;                                   // -1 = points on the -cx side (default), +1 = on the +cx side
+  if (batchRows && batchRows.length){ let s3=0; for(const r of batchRows) s3 += (r.cx>=0?1:-1); ptSide = s3>0 ? 1 : -1; }
+  const z1 = -ptSide*Zl*0.92, z0 = -z1;              // z1 = THR A end, z0 = THR B end
   {
     const LAY = (typeof APT_LAYOUT!=='undefined') && APT_LAYOUT[(document.getElementById('aptSel')||{}).value];
     if (LAY){
-      const L2 = LAY.L, zcap = Zt-14, zz0=-Zl*0.92, zz1=Zl*0.92;
+      const L2 = LAY.L, zcap = Zt-14, zz0=z0, zz1=z1;
       const zs = s => Math.max(-zcap, Math.min(zcap, zz1 - (s/L2)*(zz1-zz0)));
       const gy = x => groundAt(x) + 0.03;
       // draw the layout on its REAL side: scene +x is the pasted points' side, so when the
       // points sit on the negative cross-track side (e.g. east of OEHL), the layout mirrors with them
-      let mir = 1;
-      if (batchRows && batchRows.length){ let s3=0; for(const r of batchRows) s3 += (r.cx>=0?1:-1); if (s3<0) mir=-1; }
+      const mir = ptSide;                              // +cx points: layout as-is; -cx points: mirrored onto their side
       const X = x => x*mir;
       const pave=(s1,s2,x1r,x2r,col,alpha)=>{ const x1=X(x1r), x2=X(x2r);
         quad([x1,gy(x1),zs(s1)],[x2,gy(x2),zs(s1)],[x2,gy(x2),zs(s2)],[x1,gy(x1),zs(s2)],col,alpha==null?1:alpha); };
@@ -1366,7 +1372,6 @@ function draw3d(p,e){
   const hasBatch = !!(batchRows && batchRows.length);
   const okAll = hasBatch ? batchRows.every(r=>!r.e.inside && r.e.pen<=0) : (!e.inside && e.pen<=0);
   const ok = !e.inside && e.pen<=0;
-  const z0=-Zl*0.92, z1=Zl*0.92;
   if (hasBatch){
     // map real stations onto the scene runway — beyond-threshold stations extend past the slab, clamped to the terrain
     const zOf = s => Math.max(-(Zt-14), Math.min(Zt-14, z1 - (s/Math.max(batchL,1))*(z1-z0)));
@@ -1661,7 +1666,7 @@ function draw3d(p,e){
     for(let i=0;i<batchRows.length;i++){
       const r=batchRows[i], sel=(i===batchSel);
       const bad=(r.e.inside || r.e.pen>0);
-      const zz = Math.max(-(Zt-14), Math.min(Zt-14, (Zl*0.92) - (r.s/Math.max(batchL,1))*(2*Zl*0.92)));
+      const zz = Math.max(-(Zt-14), Math.min(Zt-14, z1 - (r.s/Math.max(batchL,1))*(z1-z0)));
       const xx = Math.min(r.d, 540);
       const col = bad ? '#8c2a2d' : (r.nocov ? '#8a650f' : '#1d6b43');
       const txt = sel
@@ -1696,15 +1701,19 @@ function draw3d(p,e){
     const S = Math.min((IW-20)/(aMax-aMin), (IH-32)/(cMax-cMin));
     const ox = ix+10 + ((IW-20) - S*(aMax-aMin))/2;
     const oy = iy+24 + ((IH-32) - S*(cMax-cMin))/2;
-    const MX = (a,c)=>[ ox + (a-aMin)*S, oy + (c-cMin)*S ];
+    // same orientation rule as the scene: points' side at the top, runway axis flipped with it (a rotation, never a mirror)
+    const flipP = ptSide > 0;
+    const MX = (a,c)=>[ ox + (flipP ? (aMax-a) : (a-aMin))*S, oy + (flipP ? (cMax-c) : (c-cMin))*S ];
     // runway slab on the centreline
     const [r1x,r1y] = MX(0,0), [r2x,r2y] = MX(batchL,0);
     ctx.strokeStyle = '#55585c'; ctx.lineWidth = Math.max(3, 46*S);
     ctx.beginPath(); ctx.moveTo(r1x,r1y); ctx.lineTo(r2x,r2y); ctx.stroke();
     // threshold designators at each end of the slab
     ctx.font = 'bold 10px Tahoma'; ctx.textAlign = 'center'; ctx.fillStyle = '#16454E';
-    ctx.fillText(thrName(0), Math.max(ix + 26, r1x - 17), r1y - 7);
-    ctx.fillText(thrName(1), Math.min(ix + IW - 26, r2x + 17), r2y - 7);
+    const lx0 = flipP ? Math.min(ix + IW - 26, r1x + 17) : Math.max(ix + 26, r1x - 17);
+    const lx1 = flipP ? Math.max(ix + 26, r2x - 17) : Math.min(ix + IW - 26, r2x + 17);
+    ctx.fillText(thrName(0), lx0, r1y - 7);
+    ctx.fillText(thrName(1), lx1, r2y - 7);
     // strip edges (dashed teal) at ±strip half-width
     ctx.strokeStyle = 'rgba(31,154,160,.8)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
     for (const sg of [p.strip, -p.strip]){
@@ -1724,7 +1733,7 @@ function draw3d(p,e){
       if (LAY2.bldg && LAY2.bldg.length){
         const bd=LAY2.bldg[0], [tx2,ty2]=MX((bd.s1+bd.s2)/2,-380);
         ctx.font='9px Tahoma'; ctx.fillStyle='#4a5660'; ctx.textAlign='center';
-        ctx.fillText(lang==='en'?'Terminal':'الصالة', tx2, ty2);
+        ctx.fillText(lang==='en'?'Terminal':'الصالة', tx2, ty2 + (flipP ? 9 : 0));
       }
     }
     // fence polyline, coloured per segment verdict
@@ -1748,8 +1757,8 @@ function draw3d(p,e){
     ctx.fillStyle = '#16454E'; ctx.fillText(t.b_plan, ix+IW/2, iy+16);
     // north arrow: true north rotated into the runway frame, so orientation is never guesswork
     if (batchU){
-      const nx = batchU.uy, ny = -batchU.ux, nl = Math.hypot(nx,ny)||1;
-      const ax = nx/nl, ay = ny/nl, cx2 = ix+IW-21, cy2 = iy+IH-21;
+      const nx = batchU.uy, ny = -batchU.ux, nl = Math.hypot(nx,ny)||1, rs = flipP ? -1 : 1;
+      const ax = rs*nx/nl, ay = rs*ny/nl, cx2 = ix+IW-21, cy2 = iy+IH-21;
       ctx.beginPath(); ctx.arc(cx2,cy2,13,0,6.3);
       ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fill();
       ctx.strokeStyle='rgba(22,69,78,.55)'; ctx.lineWidth=1; ctx.stroke();
@@ -1814,8 +1823,8 @@ function orbitStep(act){
     if(cam.home===0){ cam.mode='orbit'; cam.yaw=ORBIT_HOME.yaw; cam.pitch=ORBIT_HOME.pitch;
       cam.dist = Math.max(ORBIT_HOME.dist, (window.SCENE_EXT||0)*1.3); }
     if(cam.home===1){ cam.mode='walk'; cam.wx=0; cam.wz=0;    cam.wyaw=1.5708;  cam.wpitch=0.06; } // mid-runway, facing fence
-    if(cam.home===2){ cam.mode='walk'; cam.wx=0; cam.wz=-285; cam.wyaw=0;       cam.wpitch=0.05; } // S threshold, looking down the runway
-    if(cam.home===3){ cam.mode='walk'; cam.wx=0; cam.wz=285;  cam.wyaw=3.1416;  cam.wpitch=0.05; } // N threshold, looking back
+    if(cam.home===2){ cam.mode='walk'; cam.wx=0; cam.wz=-285; cam.wyaw=0;       cam.wpitch=0.05; } // one threshold, looking down the runway
+    if(cam.home===3){ cam.mode='walk'; cam.wx=0; cam.wz=285;  cam.wyaw=3.1416;  cam.wpitch=0.05; } // the other threshold, looking back
   }
   clampCam(); update();
 }
